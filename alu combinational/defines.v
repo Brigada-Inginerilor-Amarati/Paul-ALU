@@ -1,0 +1,9 @@
+`define RCA 4'b0000
+`define RCS 4'b0001
+`define AND 4'b010
+`define OR 4'b0011
+`define XOR 4'b0100
+`define SHIFT_LS 4'b0101
+`define SHIFT_LD 4'b0110
+`define SHIFT_AS 4'b0111
+`define SHIFT_AD 4'b1000
