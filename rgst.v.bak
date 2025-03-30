@@ -147,10 +147,11 @@ module rgst_tb;
         .data_out(data_out)
     );
 
-    localparam CLK_PERIOD = 100, RUNNING_CYCLES = 4;
+// problema la testarea right shift era ca RUNNING_CYCLES era prea mic => operatiile de right shift nu mai aveau loc
+    localparam CLK_PERIOD = 100, RUNNING_CYCLES = 10;
     initial begin
         clk = 0;
-        repeat (2 * RUNNING_CYCLES) #(CLK_PERIOD / 2) clk = ~clk;
+        repeat (RUNNING_CYCLES << 1) #(CLK_PERIOD >> 1) clk = ~clk;
     end
 
     localparam RST_DURATION = 25;
@@ -173,13 +174,55 @@ module rgst_tb;
         // Wait for reset to be deasserted
         @(posedge reset);
         #10;
-
-        // --- Test 1: Parallel Load ---
-        // Load the value 8'hA5 into the register.
-        $display("Time %t: Parallel Load test; loading 8'hA5", $time);
+        
+        // written to be used in simulation interface, data seen as wave
+                
+        // Enable load signals
+        data_in = 8'b10110010;
         load_enable = 1;
         load = 1;
-        data_in = 8'hA5;
+        #CLK_PERIOD;
+        
+        // Disable load signals
+        load_enable = 0;
+        load = 0;
+        #CLK_PERIOD;
+
+        // --- Test 2: Left Shift ---
+        // Enable left shift: the register shifts left by one bit each clock,
+        // with left_shift_value inserted into the LSB.
+        left_shift_enable  = 1;
+        left_shift_value   = 0;  // insert 0 at the LSB during left shift
+        right_shift_enable = 0;  // ensure right shift is off
+        #CLK_PERIOD;  // first left shift cycle
+        
+        left_shift_value   = 1;  // insert 0 at the LSB during left shift
+        #CLK_PERIOD;  // second left shift cycle
+        
+        left_shift_enable = 0;  // disable shifting
+        // #CLK_PERIOD; // disabled to stress test module
+
+        // --- Test 3: Right Shift ---
+        // Enable right shift: the register shifts right by one bit each clock,
+        // with right_shift_value inserted into the MSB.
+        right_shift_enable = 1;
+        right_shift_value = 1; // insert 1 at the MSB during right shift (simulating sign extension)
+        left_shift_enable = 0;  // ensure left shift is off
+        #CLK_PERIOD;  // first right shift cycle
+        
+        #CLK_PERIOD;  // second right shift cycle
+        right_shift_enable = 0;  // disable shifting
+        // #CLK_PERIOD;
+        
+        // $finish;
+
+/*
+        // --- Test 1: Parallel Load ---
+        // Load the value 8'hA5 into the register.
+        $display("Time %t: Parallel Load test; loading 8'hB2", $time);
+        load_enable = 1;
+        load = 1;
+        data_in = 8'b10110010;
         #CLK_PERIOD;
 
         $display("Time %t: Load test", $time);
@@ -212,6 +255,9 @@ module rgst_tb;
         right_shift_value = 1; // insert 1 at the MSB during right shift (simulating sign extension)
         left_shift_enable = 0;  // ensure left shift is off
         #CLK_PERIOD;  // first right shift cycle
+
+        $display("Value after right shift: %b", data_out);
+        
         #CLK_PERIOD;  // second right shift cycle
         right_shift_enable = 0;  // disable shifting
         #CLK_PERIOD;
@@ -220,6 +266,8 @@ module rgst_tb;
 
         $display("Time %t: End of Simulation", $time);
         $finish;
+        
+*/
     end
 
 endmodule
