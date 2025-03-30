@@ -1,0 +1,31 @@
+{
+	"nodes":[
+		{"id":"6001cfb09b6220a6","type":"text","text":"9 bit PARALLEL ADDER / SUBSTRACTOR\n-> x / 9 bit\n-> y / 9 bit\n-> carry in / 1 bit\n<- output / 9 bit\n<- carry out / 1 bit\n<- negative / 1 bit\n<- overflow / 1 bit c[n] xor c[n - 1]\n<- zero / 1 bit\n\n","x":-880,"y":-40,"width":365,"height":280,"color":"6"},
+		{"id":"2fb504c90fde7099","type":"text","text":"A RGST 9 bit\n-> clk\n-> reset\n-> load\n-> input\n-> right shift\n-> left shift\n<- output","x":-1027,"y":-380,"width":250,"height":240,"color":"1"},
+		{"id":"1bcf4ce8dde14000","type":"text","text":"Q RGST 8 bit\n-> clk\n-> reset\n-> load\n-> input\n-> right shift\n-> left shift\n<- output","x":-697,"y":-378,"width":167,"height":238,"color":"2"},
+		{"id":"03d553832c7305f6","type":"text","text":"M RGST 9bit\n-> clk\n-> reset\n-> load\n-> input\n-> right shift\n-> left shift\n<- output","x":-222,"y":-407,"width":160,"height":240,"color":"1"},
+		{"id":"d6ddbf9b2af613b2","type":"text","text":"INBUS 8 bit","x":-1220,"y":-560,"width":1480,"height":60},
+		{"id":"5f5f63f8327de88f","type":"text","text":"OUTBUS (Add / Subtract) -> A[7:0]","x":-1220,"y":300,"width":1320,"height":60},
+		{"id":"da68f56cbd00fe14","type":"text","text":"OUTBUS (Multiply) -> A[7:0] -> Q[7:0]","x":-1220,"y":400,"width":1320,"height":60},
+		{"id":"15418154728eb40c","type":"text","text":"OUTBUS (Divide) -> Q[7:0]","x":-1220,"y":500,"width":1320,"height":60},
+		{"id":"435816cfd92d03fa","type":"text","text":"MULTIPLIER CONTROL UNIT\n\n-> clk\n-> reset\nACS\n-> begin\n<- end\n-> right shift\n-> ADD\n-> SUB\n-> ADD * 2\n-> SUB * 2","x":-59,"y":240,"width":277,"height":342,"color":"4"},
+		{"id":"48dd9252c52b16a2","type":"text","text":"DIVIDER CONTROL UNIT\n\n-> clk\n-> reset\nACS\n-> begin\n<- end\n-> left shift","x":-59,"y":620,"width":277,"height":342,"color":"4"},
+		{"id":"e7e1e1be6d09bb8c","type":"text","text":"Q [-1]","x":-440,"y":-285,"width":120,"height":50,"color":"2"},
+		{"id":"c53df1e4e0cb7228","type":"text","text":"ALU CONTROL UNIT\n\n-> clk\n-> reset\n-> begin\n-> load registers\n<- end\n\n-> opcode 2 bit","x":-40,"y":-29,"width":258,"height":258,"color":"4"},
+		{"id":"1aab5211d1744602","type":"text","text":"EXOR GATE","x":-642,"y":40,"width":112,"height":60,"color":"2"}
+	],
+	"edges":[
+		{"id":"b8e6a78aa6ab1f2f","fromNode":"c53df1e4e0cb7228","fromSide":"left","toNode":"6001cfb09b6220a6","toSide":"right"},
+		{"id":"74913921df3f3279","fromNode":"2fb504c90fde7099","fromSide":"right","toNode":"1bcf4ce8dde14000","toSide":"left"},
+		{"id":"ae62610337a33ef8","fromNode":"2fb504c90fde7099","fromSide":"bottom","toNode":"6001cfb09b6220a6","toSide":"top"},
+		{"id":"102d0f6d9951a799","fromNode":"1bcf4ce8dde14000","fromSide":"right","toNode":"e7e1e1be6d09bb8c","toSide":"left"},
+		{"id":"3a7a33019557aba1","fromNode":"d6ddbf9b2af613b2","fromSide":"bottom","toNode":"2fb504c90fde7099","toSide":"top","label":"+ dublare bit semn"},
+		{"id":"31254a64fed5e517","fromNode":"d6ddbf9b2af613b2","fromSide":"bottom","toNode":"03d553832c7305f6","toSide":"top","label":"+ dublare bit semn"},
+		{"id":"bc412a3d411f285d","fromNode":"d6ddbf9b2af613b2","fromSide":"bottom","toNode":"1bcf4ce8dde14000","toSide":"top"},
+		{"id":"efb2c3315017baeb","fromNode":"6001cfb09b6220a6","fromSide":"bottom","toNode":"2fb504c90fde7099","toSide":"left"},
+		{"id":"c14a87f11474e563","fromNode":"2fb504c90fde7099","fromSide":"bottom","toNode":"5f5f63f8327de88f","toSide":"left"},
+		{"id":"8ac887334d5db5dd","fromNode":"1bcf4ce8dde14000","fromSide":"bottom","toNode":"da68f56cbd00fe14","toSide":"left"},
+		{"id":"4eaaa7e058d474b0","fromNode":"1bcf4ce8dde14000","fromSide":"bottom","toNode":"15418154728eb40c","toSide":"left"},
+		{"id":"d61d54885c3e1893","fromNode":"03d553832c7305f6","fromSide":"bottom","toNode":"6001cfb09b6220a6","toSide":"right"}
+	]
+}
