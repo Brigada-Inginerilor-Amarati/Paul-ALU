@@ -16,16 +16,14 @@ module rgst #(
 );  // e nevoie de MUX pentru data_in pe registrul A ( iesire adder, inbus )
 
     wire [1 : 0] selector_mux;  //00-01 for keep/data_in, 10 for right_shift, 11 for left_shift
-    assign selector_mux[1] = ~load_enable & (left_shift_enable | right_shift_enable); // enable shift
-    assign selector_mux[0] = load_enable | left_shift_enable; // pentru a activa doar pentru load_enable sau left shift
+    assign selector_mux[1] = ~load_enable & (left_shift_enable | right_shift_enable);
+    assign selector_mux[0] = load_enable | left_shift_enable;
 
     genvar i;
 
     generate
-
+        wire [width - 1 : 0] data_interm;
         for (i = 0; i < width; i = i + 1) begin
-
-            wire [width - 1 : 0] data_interm;
 
             if (0 < i && i < width - 1) begin
                 mux mux_inst (  // left, right, sum/inbus, keep
