@@ -15,10 +15,10 @@
 module adder #(
     parameter WIDTH = 9
 ) (
-    input wire [WIDTH-1:0] a,
-    input  wire [WIDTH-1:0] b,
-    input  wire             carry_in,
-    output wire [WIDTH-1:0] sum
+    input wire signed [WIDTH-1:0] a,
+    input wire signed [WIDTH-1:0] b,
+    input wire                    carry_in,
+    output wire signed [WIDTH-1:0] sum
 );
 
     assign sum = a + b + carry_in;
@@ -58,52 +58,6 @@ module register #(
         else if (enable) out <= in;
     end
 
-endmodule
-
-module single_right_shifter #(
-    parameter WIDTH = 9
-) (
-    input  wire               clk,
-    input  wire               rst_b,
-    input  wire               enable,
-    input  wire               load,
-    input  wire [WIDTH-1:0]   in,
-    output reg  [WIDTH-1:0]   out
-);
-    always @(posedge clk or negedge rst_b) begin
-        if (!rst_b) out <= {WIDTH{1'b0}};
-        else if (enable) out <= {out[WIDTH-1], out[WIDTH-1:1]};
-        else if (load) out <= in;
-    end
-endmodule
-
-
-module double_right_shifter #(
-    parameter WIDTH = 18
-) (
-    input  wire               clk,
-    input  wire               rst_b,
-    input  wire               enable,
-    input  wire               load,
-    input  wire [WIDTH-1:0]   in,
-    output reg  [WIDTH-1:0]   out
-);
-    always @(posedge clk or negedge rst_b) begin
-        if (!rst_b) out <= {WIDTH{1'b0}};
-        else if (enable) out <= {out[WIDTH-1], out[WIDTH-1], out[WIDTH-1:2]};
-        else if (load) out <= in;
-    end
-endmodule
-
-
-module xor_gate #(
-    parameter WIDTH = 9
-) (
-    input  wire               enable,
-    input  wire [WIDTH-1:0]   in,
-    output wire [WIDTH-1:0]   out
-);
-    assign out = enable ? in ^ {WIDTH{1'b1}} : {WIDTH{1'b0}};
 endmodule
 
 
@@ -149,6 +103,17 @@ module counter_check(
 
     assign cnt3 = cnt[1] & cnt[0];
 
+endmodule
+
+module right_shifter #(
+  parameter WIDTH = 18
+)(
+  input  wire               enable,
+  input  wire signed [WIDTH-1:0] in,
+  output wire signed [WIDTH-1:0] out
+);
+  // >>> on a signed operand does an arithmetic shift
+  assign out = enable ? (in >>> 2) : in;
 endmodule
 
 // C0 -> init A = 0, Cnt = 0, Qm1 = 0, M = inbus
@@ -210,24 +175,8 @@ module booth_radix4_multiplier (
         .out(M)
     );
 
-    // register for A accumulator, initialize to 0 on c0
-    register #(9) regA (
-      .clk    (clk),
-      .rst_b  (rst_b),
-      .enable (c[0]),
-      .in     (9'b0),
-      .out    (A)
-    );
 
-    // register for Qm1, initialize to 0 on c0
-    register #(1) regQm1 (
-      .clk    (clk),
-      .rst_b  (rst_b),
-      .enable (c[0]),
-      .in     (1'b0),
-      .out    (Qm1)
-    );
-
+    // register for Qm1, initialize to 0 on c0 (updated below after shifter)
     // register for counter, initialize to 0 on c0
     register #(2) regCnt (
       .clk    (clk),
@@ -240,43 +189,13 @@ module booth_radix4_multiplier (
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 1) Input bus Q, precompute M, set ctrl_bits
     //––––––––––––––––––––––––––––––––––––––––––––––––
-    register #(8) inbus_rgst_Q (
-        .clk(clk),
-        .rst_b(rst_b),
-        .enable(c[1]),
-        .in(inbus),
-        .out(Q)
-    );
+    // Q register: combined load, see below after shifter
 
-    single_right_shifter #(9) shifterM1 (
-        .clk(clk),
-        .rst_b(rst_b),
-        .load(1'b1),
-        .enable(c[1]),
-        .in(M),
-        .out(precomputed_M[1])
-    );
-
-    single_right_shifter #(9) shifterM3 (
-        .clk(clk),
-        .rst_b(rst_b),
-        .load(1'b1),
-        .enable(c[1]),
-        .in(M),
-        .out(precomputed_M[3])
-    );
-
-    xor_gate #(9) xor_gateM2 (
-        .enable(c[1]),
-        .in(M),
-        .out(precomputed_M[2])
-    );
-
-    xor_gate #(9) xor_gateM3 (
-        .enable(c[1]),
-        .in(M),
-        .out(precomputed_M[3])
-    );
+    // Precompute signed multiples of M for Booth:
+    assign precomputed_M[0] = M;             // +1·M
+    assign precomputed_M[1] = M <<< 1;       // +2·M
+    assign precomputed_M[2] = -M;            // ~1·M
+    assign precomputed_M[3] = -(M <<< 1);    // ~2·M
 
     assign ctrl_bits = { Q[1], Q[0], Qm1 };
 
@@ -302,7 +221,7 @@ module booth_radix4_multiplier (
     adder adder_inst (
     .a       (A),
     .b       (additionM),
-    .carry_in(c[4]),
+    .carry_in(1'b0),
     .sum     (sumA)
     );
 
@@ -316,13 +235,6 @@ module booth_radix4_multiplier (
     assign ldA = c[2];
     assign nextA = sumA;
 
-    register #(.WIDTH(9)) moveSumToA (
-    .clk    (clk),
-    .rst_b  (rst_b),
-    .enable (c[2]),
-    .in     (sumA),
-    .out    (A)
-    );
 
     // Expose ldA and nextA for debug
     assign debug_ldA     = ldA;
@@ -331,30 +243,52 @@ module booth_radix4_multiplier (
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 4) Shift–register for {A,Q,Qm1}
     //––––––––––––––––––––––––––––––––––––––––––––––––
-    wire [17:0] shift_out;
-    double_right_shifter #(18) shifter (
-        .clk   (clk),
-        .rst_b (rst_b),
-        .load  (1'b1),
+
+    wire signed [17:0] full_slice = {A, Q, Qm1};
+    wire signed [17:0] shifted_slice;
+    
+    right_shifter #(18) arithmetic_r_sh(
         .enable(c[5]),
-        .in ({A, Q, Qm1}),
-        .out(shift_out)
+        .in(full_slice),
+        .out(shifted_slice)
     );
+
+    // after shifting
+    wire [7:0]  Q_shifted   = shifted_slice[8:1];
+    wire        Qm1_shifted = shifted_slice[0];
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 5) Slice “shift_out” into A, Q, Qm1
     //––––––––––––––––––––––––––––––––––––––––––––––––
 
-    // Removed shift_slicer since A, Q, Qm1 are registered now
-    /*
-    shift_slicer slicer(
-        .enable(c[5]),
-        .full_slice(shift_out),
-        .a_slice(A),
-        .b_slice(Q),
-        .c_slice(Qm1)
+    // Q register: loads inbus on c1, shifted Q on c5
+    register #(.WIDTH(8)) regQ (
+      .clk    (clk),
+      .rst_b  (rst_b),
+      .enable (c[1] | c[5]),
+      .in     (c[1] ? inbus : Q_shifted),
+      .out    (Q)
     );
-    */
+
+    // Qm1 register: loads 0 on c0, shifted Qm1 on c5
+    register #(.WIDTH(1)) regQm1 (
+      .clk    (clk),
+      .rst_b  (rst_b),
+      .enable (c[0] | c[5]),
+      .in     (c[0] ? 1'b0 : Qm1_shifted),
+      .out    (Qm1)
+    );
+
+    // Separate register for A: loads on c0, c2, c5 using nextA as before
+    wire signed [8:0] regA_in;
+    assign regA_in = c[0] ? 9'sd0 : (c[2] ? nextA : shifted_slice[17:9]);
+    register #(.WIDTH(9)) regA (
+      .clk    (clk),
+      .rst_b  (rst_b),
+      .enable (c[0] | c[2] | c[5]),
+      .in     (regA_in),
+      .out    (A)
+    );
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 6) Instantiate Counter and Compute CNT3
@@ -397,8 +331,6 @@ module booth_radix4_multiplier (
     //––––––––––––––––––––––––––––––––––––––––––––––––
     
 endmodule
-
-
 
 /*
 
@@ -447,8 +379,9 @@ module control_unit (
                 end_op   = 0;
 
                 if (begin_op) begin
-                    next_state  = LOAD1;
                     ctrl_sig[0] = 1;
+                    next_state  = LOAD1;
+
                 end else begin
                     next_state = IDLE;
                 end
@@ -465,16 +398,21 @@ module control_unit (
             end
             CHECK_CTRL_BITS: begin
                 ctrl_sig = 9'b0;
-                if (ctrl_bits[2] == ctrl_bits[1] == ctrl_bits[0]) begin
-                    next_state  = SHIFT_RIGHT;
+                if (ctrl_bits == 3'b000 | ctrl_bits == 3'b111) begin
+                    
                     ctrl_sig[5] = 1;
+                    next_state  = SHIFT_RIGHT;
                 end
+
+                else begin
 
                 ctrl_sig[2] = 1;
                 ctrl_sig[3] = (~ctrl_bits[2] & ctrl_bits[1] & ctrl_bits[0]) | (ctrl_bits[2] & ~ctrl_bits[1] & ~ctrl_bits[0]);
                 ctrl_sig[4] = (ctrl_bits[2] & ~ctrl_bits[0]) | (ctrl_bits[2] & ~ctrl_bits[1]);
 
                 next_state = ADD_MULTIPLICAND;
+
+                end
             end
             ADD_MULTIPLICAND: begin
                 ctrl_sig = 9'b0;
@@ -586,14 +524,14 @@ module tb_booth_radix4;
 
   // clock gen: 10 ns period
   initial clk = 0;
-    always #10 clk = ~clk;
+    always #5 clk = ~clk;
   // Instrumentation: print intermediate values each clock
   integer cycle;
   integer timeout;
-  initial begin
+  initial begin 
     cycle = 0;
     $monitor(
-      "cycle=%0d | c=%b | ctrl_bits=%b | count3=%b | outbus=%h\nA=%h | Q=%h | Qm1=%b |  ldA=%b | sumA=%h | addM=%h | nextA=%h ",
+      "cycle=%0d | c=%b | ctrl_bits=%b | count3=%b | outbus=%h\nA=%d | Q=%d | Qm1=%b |  ldA=%b | sumA=%d | addM=%d | nextA=%d ",
     cycle,
       c, ctrl_bits, count3, outbus, A_out, Q_out, Qm1_out, debug_ldA_tb, debug_sumA_tb, debug_addM_tb, debug_nextA_tb
     );
@@ -612,19 +550,16 @@ module tb_booth_radix4;
     rst_b  = 1;
     #10;
 
-    // 2) drive M and Q via the single inbus port
-    //    on the first cycle start=c0→load M
-    //    on the second cycle c1→load Q
+    // drive M, pulse begin_op exactly on a rising‐edge
     inbus = 8'sd7;
+    @(posedge clk);      // wait for a clean edge
     start = 1;
-    $display("Input : %d", inbus);
-
-    #10;      // one clock edge: c0 asserted
+    @(posedge clk);      // hold start through this rising edge
     start = 0;
-    #5;
+
+    // drive Q on the next edge
     inbus = 8'sd3;
-     $display("Input : %d", inbus);
-    #5;       // second clock edge: c1 asserted
+    @(posedge clk);      // Q load edge
 
     // 3) wait for end_op (c8) from the CU, but time out after 50 cycles
     timeout = 0;
@@ -692,5 +627,54 @@ module adder #(
         end
     endgenerate
 
+endmodule
+*/
+
+
+/*
+module single_right_shifter #(
+    parameter WIDTH = 9
+) (
+    input  wire               clk,
+    input  wire               rst_b,
+    input  wire               enable,
+    input  wire               load,
+    input  wire [WIDTH-1:0]   in,
+    output reg  [WIDTH-1:0]   out
+);
+    always @(posedge clk or negedge rst_b) begin
+        if (!rst_b) out <= {WIDTH{1'b0}};
+        else if (load) out <= in;
+        else if (enable) out <= {out[WIDTH-1], out[WIDTH-1:1]};
+    end
+endmodule
+
+
+module double_right_shifter #(
+    parameter WIDTH = 18
+) (
+    input  wire               clk,
+    input  wire               rst_b,
+    input  wire               enable,
+    input  wire               load,
+    input  wire [WIDTH-1:0]   in,
+    output reg  [WIDTH-1:0]   out
+);
+    always @(posedge clk or negedge rst_b) begin
+        if (!rst_b) out <= {WIDTH{1'b0}};
+        else if (load) out <= in;
+        else if (enable) out <= {out[WIDTH-1], out[WIDTH-1], out[WIDTH-1:2]};
+    end
+endmodule
+
+
+module xor_gate #(
+    parameter WIDTH = 9
+) (
+    input  wire               enable,
+    input  wire [WIDTH-1:0]   in,
+    output wire [WIDTH-1:0]   out
+);
+    assign out = enable ? ~in : in;
 endmodule
 */
