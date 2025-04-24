@@ -15,14 +15,13 @@
 module adder #(
     parameter WIDTH = 9
 ) (
+    inout wire [WIDTH-1:0] a,
     input  wire             enable,
-    input  wire [WIDTH-1:0] a,
     input  wire [WIDTH-1:0] b,
-    input  wire             carry_in,
-    output wire [WIDTH-1:0] sum
+    input  wire             carry_in
 );
-    wire [WIDTH-1:0] raw_sum = a + b + carry_in;
-    assign sum = en ? raw_sum : {WIDTH{1'b0}};
+    wire [WIDTH-1:0] sum = a + b + carry_in;
+    assign a = enable ? sum : a;
 
 endmodule
 
@@ -108,22 +107,47 @@ module xor_gate #(
 endmodule
 
 
-module select_multiplicand (
-    input wire c3,
-    c4,
-    output wire [1:0] selector
+module shift_slicer(
+    input wire enable,
+    input wire [17:0] full_slice,
+    output wire [8:0] a_slice,
+    output wire [7:0] b_slice,
+    output wire c_slice
 );
 
-    // C2 -> always -> moves you to the selection
-    // C3 -> double
-    // C4 -> negate
+assign a_slice = enable ? full_slice[17:9] : a_slice;
+assign b_slice = enable ? full_slice[8:1] : b_slice;
+assign c_slice = enable ? full_slice[0] : c_slice;
 
-    // 00 -> M
-    // 01 -> 2M
-    // 10 -> -M
-    // 11 -> -2M
+endmodule
 
-    assign selector = {c4, c3};
+
+module select_multiplicand (
+  input  wire c3,
+  input  wire c4,
+  input  wire signed [8:0] pre_M0,
+  input  wire signed [8:0] pre_M1,
+  input  wire signed [8:0] pre_M2,
+  input  wire signed [8:0] pre_M3,
+  output reg  signed [8:0] M
+);
+  always @* begin
+    case ({c4,c3})
+      2'b00: M = pre_M0;
+      2'b01: M = pre_M1;
+      2'b10: M = pre_M2;
+      2'b11: M = pre_M3;
+    endcase
+  end
+endmodule
+
+
+module counter_check(
+    input wire [1:0] cnt,
+    output wire cnt3
+);
+
+    assign cnt3 = cnt[1] & cnt[0];
 
 endmodule
 
@@ -147,16 +171,16 @@ module booth_radix4_multiplier (
     input  wire               rst_n,
     input  wire signed [ 7:0] inbus,
     input  wire        [ 8:0] c,
-    output wire               cnt3,       // counter reached end
+    output wire               count3,       // counter reached end
     output wire        [ 2:0] ctrl_bits,  // {Q[1],Q[0],Qm1}
     output wire signed [15:0] outbus
 );
 
-    wire signed [8:0] A, M;
-    wire signed [7:0] Q;
-    wire Qm1;
-    wire [1:0] counter;
-    wire signed [3:0][8:0] precomputed_M;
+    wire signed [8:0] A = 0, M = 0;
+    wire signed [7:0] Q = 0;
+    wire Qm1 = 0;
+    wire [1:0] cnt = 0;
+    wire signed [8:0] precomputed_M [0:3];
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 0) Input bus M
@@ -168,15 +192,6 @@ module booth_radix4_multiplier (
         .in(inbus),
         .out(Q)
     );
-
-    always @*
-        if (c[0]) begin
-            assign A = 0;
-            assign counter = 0;
-            assign Qm1 = 0;
-            assign M = {Q[7], Q[7:0]};
-
-        end
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 1) Input bus Q, precompute M
@@ -222,29 +237,28 @@ module booth_radix4_multiplier (
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 2) Select which multiple under c2,c3,c4
     //––––––––––––––––––––––––––––––––––––––––––––––––
-    wire [1:0] selector;
+    wire [8:0] additionM;
     select_multiplicand sel_u (
         .c3      (c[3]),
         .c4      (c[4]),
-        .selector(selector)
+        .pre_M0(precomputed_M[0]),
+        .pre_M1(precomputed_M[1]),
+        .pre_M2(precomputed_M[2]),
+        .pre_M3(precomputed_M[3]),
+        .M(additionM)
     );
-
     // 4→1 mux for chosen multiple
-    always @* assign M = precomputed_M[selector];
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 3) Adder: A = A + M if c2 = 0
     //––––––––––––––––––––––––––––––––––––––––––––––––
-    wire [8:0] sumA;
-    adder #(9) adder_u (
+    adder #(9) adder_inst (
         .a       (A),
-        .b       (M),
+        .b       (additionM),
         .carry_in(c[4]),
-        .enable  (c[2]),
-        .sum     (sumA)
+        .enable  (c[2])
     );
-    always @* if (c[2]) assign A = sumA;
-
+    
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 4) Shift–register for {A,Q,Qm1}
     //––––––––––––––––––––––––––––––––––––––––––––––––
@@ -261,13 +275,14 @@ module booth_radix4_multiplier (
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 5) Slice “shift_out” into A, Q, Qm1
     //––––––––––––––––––––––––––––––––––––––––––––––––
-    always @* begin
-        if (c[5]) begin
-            assign A = shift_out[17:9];
-            assign Q = shift_out[8:1];
-            assign Qm1 = shift_out[0];
-        end
-    end
+
+    shift_slicer slicer(
+        .enable(c[5]),
+        .full_slice(shift_out),
+        .a_slice(A),
+        .b_slice(Q),
+        .c_slice(Qm1)
+    );
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 6) Instantiate Counter and Compute CNT3
@@ -277,10 +292,13 @@ module booth_radix4_multiplier (
         .clk(clk),
         .rst_b(rst_b),
         .enable(c[6]),
-        .cnt(counter)
+        .cnt(cnt)
     );
 
-    always @* assign cnt3 = counter[1] & counter[0];
+    counter_check cnt_check(
+        .cnt(cnt),
+        .cnt3(count3)
+    );
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 7) Send to outbus
