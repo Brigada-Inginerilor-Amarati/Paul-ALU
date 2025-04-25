@@ -2,7 +2,13 @@
 
 module control_unit_one_hot (
   input wire reset, clk, BEGIN, // upper-case because of syntax
-  input wire [1:0] op_code, // operation code // 00 - add, 01- sub, 10 - mul, 11 - div
+  input wire [1 : 0] op_code, // operation code // 00 - add, 01- sub, 10 - mul, 11 - div
+  input wire [2 : 0] bits_of_Q, // LS bits of Q register
+  input wire [2 : 0] bits_of_A, // MS bits of A register
+  input wire sgn_bit_of_M, // MSb of M
+  input wire countSRT2full, // wire if Counter for SRT-2 is full // value is 7
+  input wire countRadix4full, // similar wire, for Radix-4 // value is 3
+  input wire countLeading0sempty, // similar wire, for SRT-2 Leading0s // value is 0
   output wire END // upper-case because of syntax
   );
   
@@ -46,9 +52,48 @@ module control_unit_one_hot (
   wire [number_of_states - 1 : 0] act_state;
   wire [number_of_states - 1 : 0] next_state;
   
-  genvar i;
+  // decisional data
+  
+  wire decision_on_bits_of_Q;
+  wire decision_on_flag_bits_of_A;
+  wire decision_based_on_correction;
+  wire decision_based_on_correction_other;
+  wire decision_based_on_Radix4_counter;
+  wire decision_based_on_Leading0s_counter;
+  wire decision_based_on_MSb_of_M_related_to_leading0s;
+  wire decision_based_on_SRT2_counter;
+  
+  // value for decisional flag
+  
+  // intermediate wire, for ease of writing
+  wire interm_decision_on_flag_bits_of_A;
+  assign interm_decision_on_flag_bits_of_A = ( act_state[LSHIFT] & decision_on_flag_bits_of_A ) // to ensure flag is taken right before LSHIFT and kept over its duration
+                                           | ( 
+                                                ( act_state[COUNTLSHIFTs] | act_state[LSHIFTfor0] | ( act_state[LOADM] & op_code[1] & op_code[0] ) ) // select when to set value
+                                                & ( ~( ( bits_of_A[2] & bits_of_A[1] & bits_of_A[0] ) | ( ~bits_of_A[2] & ~bits_of_A[1] & ~bits_of_A[0] ) ) ) // to know flag is needed to be set
+                                              ); 
+  
+  dff dff_inst (
+    .clk ( clk ),
+	  .reset ( reset ),
+    .load_enable ( 1 ),
+	  .data_in ( interm_decision_on_flag_bits_of_A & sgn_bit_of_M ), // sgn_bit_of_M just to be sure // shouldn't be needed
+	  .data_out ( decision_on_flag_bits_of_A )
+  );
+  
+  // values for other decisional wires
+  
+  assign decision_on_bits_of_Q = ~( ( bits_of_Q[2] & bits_of_Q[1] & bits_of_Q[0] ) | ( ~bits_of_Q[2] & ~bits_of_Q[1] & ~bits_of_Q[0] ) ); // do ADDMtoA // without ~(...) it would be skip ADDMtoA
+  assign decision_based_on_correction = countSRT2full & bits_of_A[2];
+  assign decision_based_on_correction_other = countSRT2full & ~bits_of_A[2];
+  assign decision_based_on_Radix4_counter = countRadix4full;
+  assign decision_based_on_Leading0s_counter = countLeading0sempty;
+  assign decision_based_on_MSb_of_M_related_to_leading0s = sgn_bit_of_M;
+  assign decision_based_on_SRT2_counter = ~countSRT2full;
   
   // generate the state register
+  
+  genvar i;
   
   generate
     
@@ -56,12 +101,12 @@ module control_unit_one_hot (
       
       if ( i == IDLE ) // flip flop-ul specific IDLE primeste un jumpstart
         dff_rst_to_1 dff_rst_to_1_inst (
-	     .clk ( clk ),
-	     .reset ( reset ),
-	     .load_enable ( 1 ),
-	     .data_in ( next_state[i] ),
-	     .data_out ( act_state[i] )
-      );
+	       .clk ( clk ),
+	       .reset ( reset ),
+	       .load_enable ( 1 ),
+	       .data_in ( next_state[i] ),
+	       .data_out ( act_state[i] )
+        );
       else // flip flop pentru fiecare stare
         dff dff_inst (
 	       .clk ( clk ),
@@ -69,7 +114,7 @@ module control_unit_one_hot (
 	       .load_enable ( 1 ),
 	       .data_in ( next_state[i] ),
 	       .data_out ( act_state[i] )
-      );
+        );
       
     end
     
