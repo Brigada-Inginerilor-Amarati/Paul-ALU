@@ -1,5 +1,3 @@
-`timescale 1ns / 1ps
-
 module srt2_divider (
     input wire clk,
     input wire rst_b,
@@ -10,7 +8,8 @@ module srt2_divider (
     output wire [2 : 0] cnt2,
     output wire signed [7 : 0] outbus1,
     output wire signed [7 : 0] outbus2,
-    output wire m7
+    output wire m7,
+    output wire [2 : 0] ctrl_bits
 );
 
     //-------------------------------
@@ -149,8 +148,20 @@ module srt2_divider (
     //-------------------------------
     // CHECKING CTRL BITS & COMPUTING RESULT
     //-------------------------------
-    wire [2 : 0] ctrl_bits;
-    assign ctrl_bits = A[8 : 6];
+    rgst #(
+        .width(3)
+    ) assign_ctrl_bits (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[2]),
+        .load(1'b1),
+        .data_in(A[8 : 6]),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(ctrl_bits)
+    );
 
     wire [8 : 0] A_computed;
     wire [7 : 0] Q_computed;
@@ -168,6 +179,51 @@ module srt2_divider (
         .Q_out(Q_computed),
         .Q_star_out(Q_star_computed)
     );
+    
+    rgst #(
+        .width(9)
+    ) putA_back1 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[3]),
+        .load(1'b1),
+        .data_in(A_computed),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(A)
+    );
+    
+    rgst #(
+        .width(8)
+    ) putQ_back1 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[3]),
+        .load(1'b1),
+        .data_in(Q_computed),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(Q)
+    );
+    
+    rgst #(
+        .width(8)
+    ) putQ_star_back1 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[3]),
+        .load(1'b1),
+        .data_in(Q_star_computed),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(Q_star)
+    );
 
     wire [8 : 0] M_extended;
     assign M_extended[7 : 0] = M[7 : 0];
@@ -176,11 +232,26 @@ module srt2_divider (
     adder_rca #(
         .WIDTH(9)
     ) increment (
-        .x(A_computed),
+        .x(A),
         .y(M_extended),
         .carry_in(c[5]),  // 0 - add, 1 - substract
-        .sum(A),
+        .sum(A_computed),
         .carry_out()
+    );
+    
+    rgst #(
+        .width(9)
+    ) putA_back2 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[5]),
+        .load(1'b1),
+        .data_in(A_computed),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(A)
     );
 
     //-------------------------------
@@ -203,7 +274,21 @@ module srt2_divider (
         .in(counter2),
         .out(counter2_out)
     );
-
+    
+    rgst #(
+        .width(3)
+    ) putCNT2_back1 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[8]),
+        .load(1'b1),
+        .data_in(counter2_out),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(counter2)
+    );
 
     //-------------------------------
     // CORRECTION_STEP
@@ -220,11 +305,26 @@ module srt2_divider (
         .sum(A_corrected),
         .carry_out()
     );
+    
+    rgst #(
+        .width(9)
+    ) putA_back3 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[6] & c[9]),
+        .load(1'b1),
+        .data_in(A_corrected),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(A)
+    );
 
     adder_rca #(
         .WIDTH(8)
     ) correct_Q_star (
-        .x(Q_star_computed),
+        .x(Q_star),
         .y(8'b00000001),
         .carry_in(~(c[6] & c[9])),  // ca sa fie +
         .sum(Q_star_corrected),
@@ -233,7 +333,7 @@ module srt2_divider (
 
     rgst #(
         .width(8)
-    ) update_Q_star (
+    ) putQ_star_back2 (
         .clk(clk),
         .reset(rst_b),
         .load_enable(c[6] & c[9]),
@@ -243,7 +343,7 @@ module srt2_divider (
         .left_shift_value(1'b0),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
-        .data_out(Q_star_computed)
+        .data_out(Q_star)
     );
 
     //-------------------------------
@@ -258,11 +358,26 @@ module srt2_divider (
     adder_rca #(
         .WIDTH(8)
     ) compute_Q_Q_star (
-        .x(Q_computed),
-        .y(Q_star_computed),
+        .x(Q),
+        .y(Q_star),
         .carry_in(c[6] & c[7] & c[10]),  // ca sa fie -
         .sum(Q_out),
         .carry_out()
+    );
+    
+    rgst #(
+        .width(8)
+    ) putQ_back3 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[6] & c[7] & c[10]),
+        .load(1'b1),
+        .data_in(Q_out),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(Q)
     );
 
     parametrized_right_shifter #(
@@ -273,8 +388,23 @@ module srt2_divider (
         .enable(c[11]),
         .load(1'b1),
         .shift_pos(lz),
-        .in(A_computed),
+        .in(A),
         .out(A_out)
+    );
+    
+    rgst #(
+        .width(9)
+    ) putA_back4 (
+        .clk(clk),
+        .reset(rst_b),
+        .load_enable(c[6] & c[7] & c[10]),
+        .load(1'b1),
+        .data_in(A_out),
+        .left_shift_enable(1'b0),
+        .left_shift_value(1'b0),
+        .right_shift_enable(1'b0),
+        .right_shift_value(1'b0),
+        .data_out(A)
     );
 
     decrementer #(
@@ -324,7 +454,7 @@ module srt2_divider (
         .reset(rst_b),
         .load_enable(c[12]),
         .load(1'b1),
-        .data_in(Q_out),
+        .data_in(Q),
         .left_shift_enable(1'b0),
         .left_shift_value(1'b0),
         .right_shift_enable(1'b0),
@@ -339,89 +469,12 @@ module srt2_divider (
         .reset(rst_b),
         .load_enable(c[13]),
         .load(1'b1),
-        .data_in(A_out[7 : 0]),
+        .data_in(A[7 : 0]),
         .left_shift_enable(1'b0),
         .left_shift_value(1'b0),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
         .data_out(outbus2)
     );
-
-endmodule
-
-    //-------------------------------
-    // TESTBENCH
-    //-------------------------------
-    
-module tb_srt2_divider;
-
-    reg clk;
-    reg rst_b;
-    reg signed [7:0] inbus1;
-    reg signed [7:0] inbus2;
-    reg [13:0] c;
-    wire cnt1;
-    wire [2:0] cnt2;
-    wire signed [7:0] outbus1;
-    wire signed [7:0] outbus2;
-    wire m7;
-
-    // Instantiere DUT
-    srt2_divider uut (
-        .clk(clk),
-        .rst_b(rst_b),
-        .inbus1(inbus1),
-        .inbus2(inbus2),
-        .c(c),
-        .cnt1(cnt1),
-        .cnt2(cnt2),
-        .outbus1(outbus1),
-        .outbus2(outbus2),
-        .m7(m7)
-    );
-
-    // Clock generation
-    initial begin
-        clk = 0;
-        forever #5 clk = ~clk;  // 10ns clock period
-    end
-
-    // Test sequence
-    initial begin
-        // Resetare initiala
-        rst_b  = 0;
-        inbus1 = 8'd0;  // Q initial = 0
-        inbus2 = 8'd0;  // M initial = 0
-        c      = 14'b0;  // Control bits ini?ializate
-
-        #20;
-        rst_b  = 1;  // Scoatem reset
-
-        // Seteaz? Q ?i M
-        inbus1 = 8'd23;  // Q = 23
-        inbus2 = 8'd11;  // M = 11
-
-        #10;
-        c[0] = 1'b1;  // Activeaz? load pentru Q ?i M
-        #10;
-        c[1] = 1'b1;  // Activeaz? load pentru M
-        #10;
-        c = 14'b0;  // Dezactiveaz? load-ul
-
-        #20;
-
-        // Scoatem valorile din registrele Q ?i M
-        c[12] = 1'b1;  // Activeaz? output pentru Q (outbus1)
-        c[13] = 1'b1;  // Activeaz? output pentru Rest (outbus2)
-        #20;
-        c = 14'b0;  // Dezactiveaz? output-ul
-
-        // Afisam rezultatele
-        $display("Rezultate:");
-        $display("outbus1 (Q final) = %d", outbus1);
-        $display("outbus2 (Rest final) = %d", outbus2);
-
-        $finish;
-    end
 
 endmodule
