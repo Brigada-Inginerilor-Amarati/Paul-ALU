@@ -15,6 +15,8 @@ module alu (
     wire countRadix4full;
     wire countLeading0sempty;
     wire loadAregister_from_INBUS;
+	wire loadQregister_from_INBUS;
+	wire loadMregister_from_INBUS;
     wire initAregisterto0;
     wire initQandQprimregisters;
     wire initCounters;
@@ -51,6 +53,8 @@ module alu (
         .countRadix4full(countRadix4full),
         .countLeading0sempty(countLeading0sempty),
         .loadAregister_from_INBUS(loadAregister_from_INBUS),
+		.loadQregister_from_INBUS(loadQregister_from_INBUS),
+		.loadMregister_from_INBUS(loadMregister_from_INBUS),
         .initAregisterto0(initAregisterto0),
         .initQandQprimregisters(initQandQprimregisters),
         .initCounters(initCounters),
@@ -96,7 +100,7 @@ module alu (
     rgst reg_A (
         .clk  (clk),
         .reset(reset | initAregisterto0),
-        .load (loadAregister_from_INBUS),
+        .load (loadAregister_from_INBUS | loadAregisterfromADDER),
         .data (data_in_A),
         .out  (A)
     );
@@ -104,7 +108,7 @@ module alu (
     rgst reg_Q (
         .clk  (clk),
         .reset(reset | initQandQprimregisters),
-        .load (loadQregisterfromADDER),
+        .load (loadQregister_from_INBUS | loadQregisterfromADDER),
         .data (data_in_Q),
         .out  (Q)
     );
@@ -120,7 +124,7 @@ module alu (
     rgst reg_M (
         .clk  (clk),
         .reset(reset | initQandQprimregisters),
-        .load (loadAregisterfromADDER),
+        .load (loadMregister_from_INBUS),
         .data (data_in_M),
         .out  (M)
     );
