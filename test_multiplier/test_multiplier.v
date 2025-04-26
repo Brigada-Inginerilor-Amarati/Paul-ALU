@@ -15,9 +15,9 @@
 module adder #(
     parameter WIDTH = 9
 ) (
-    input wire signed [WIDTH-1:0] a,
-    input wire signed [WIDTH-1:0] b,
-    input wire                    carry_in,
+    input  wire signed [WIDTH-1:0] a,
+    input  wire signed [WIDTH-1:0] b,
+    input  wire                    carry_in,
     output wire signed [WIDTH-1:0] sum
 );
 
@@ -29,10 +29,10 @@ endmodule
 module counter #(
     parameter WIDTH = 2
 ) (
-    input  wire               clk,
-    input  wire               rst_b,
-    input  wire               enable,
-    output reg  [WIDTH-1:0]   cnt
+    input  wire             clk,
+    input  wire             rst_b,
+    input  wire             enable,
+    output reg  [WIDTH-1:0] cnt
 );
 
     always @(posedge clk or negedge rst_b) begin
@@ -46,11 +46,11 @@ endmodule
 module register #(
     parameter WIDTH = 8
 ) (
-    input  wire               clk,
-    input  wire               rst_b,
-    input  wire               enable,
-    input  wire [WIDTH-1:0]   in,
-    output reg  [WIDTH-1:0]   out
+    input  wire             clk,
+    input  wire             rst_b,
+    input  wire             enable,
+    input  wire [WIDTH-1:0] in,
+    output reg  [WIDTH-1:0] out
 );
 
     always @(posedge clk or negedge rst_b) begin
@@ -61,7 +61,7 @@ module register #(
 endmodule
 
 
-module shift_slicer(
+module shift_slicer (
     input wire enable,
     input wire [17:0] full_slice,
     output wire [8:0] a_slice,
@@ -69,34 +69,36 @@ module shift_slicer(
     output wire c_slice
 );
 
-assign a_slice = enable ? full_slice[17:9] : a_slice;
-assign b_slice = enable ? full_slice[8:1] : b_slice;
-assign c_slice = enable ? full_slice[0] : c_slice;
+    assign a_slice = enable ? full_slice[17:9] : a_slice;
+    assign b_slice = enable ? full_slice[8:1] : b_slice;
+    assign c_slice = enable ? full_slice[0] : c_slice;
 
 endmodule
 
 
 module select_multiplicand (
-  input  wire c3,
-  input  wire c4,
-  input  wire signed [8:0] pre_M0,
-  input  wire signed [8:0] pre_M1,
-  input  wire signed [8:0] pre_M2,
-  input  wire signed [8:0] pre_M3,
-  output reg  signed [8:0] M
+    input wire c3,
+    input wire c4,
+    input wire signed [8:0] pre_M0,
+    input wire signed [8:0] pre_M1,
+    input wire signed [8:0] pre_M2,
+    input wire signed [8:0] pre_M3,
+    output reg signed [8:0] M
 );
-  always @* begin
-    case ({c4,c3})
-      2'b00: M = pre_M0;
-      2'b01: M = pre_M1;
-      2'b10: M = pre_M2;
-      2'b11: M = pre_M3;
-    endcase
-  end
+    always @* begin
+        case ({
+            c4, c3
+        })
+            2'b00: M = pre_M0;
+            2'b01: M = pre_M1;
+            2'b10: M = pre_M2;
+            2'b11: M = pre_M3;
+        endcase
+    end
 endmodule
 
 
-module counter_check(
+module counter_check (
     input wire [1:0] cnt,
     output wire cnt3
 );
@@ -106,14 +108,14 @@ module counter_check(
 endmodule
 
 module right_shifter #(
-  parameter WIDTH = 18
-)(
-  input  wire               enable,
-  input  wire signed [WIDTH-1:0] in,
-  output wire signed [WIDTH-1:0] out
+    parameter WIDTH = 18
+) (
+    input  wire                    enable,
+    input  wire signed [WIDTH-1:0] in,
+    output wire signed [WIDTH-1:0] out
 );
-  // >>> on a signed operand does an arithmetic shift
-  assign out = enable ? (in >>> 2) : in;
+    // >>> on a signed operand does an arithmetic shift
+    assign out = enable ? (in >>> 2) : in;
 endmodule
 
 // C0 -> init A = 0, Cnt = 0, Qm1 = 0, M = inbus
@@ -136,19 +138,19 @@ module booth_radix4_multiplier (
     input  wire               rst_b,
     input  wire signed [ 7:0] inbus,
     input  wire        [ 8:0] c,
-    output wire               count3,       // counter reached end
+    output wire               count3,     // counter reached end
     output wire        [ 2:0] ctrl_bits,  // {Q[1],Q[0],Qm1}
     output wire signed [15:0] outbus,
 
     // new debug ports
-    output [8:0] A_out,
-    output [7:0] Q_out,
-    output       Qm1_out,
-    output [1:0] cnt_out,
+    output             [8:0] A_out,
+    output             [7:0] Q_out,
+    output                   Qm1_out,
+    output             [1:0] cnt_out,
     // expose adder and next-A signals
     output wire signed [8:0] debug_sumA,
     output wire signed [8:0] debug_addM,
-    output wire             debug_ldA,
+    output wire              debug_ldA,
     output wire signed [8:0] debug_nextA
 );
 
@@ -156,17 +158,17 @@ module booth_radix4_multiplier (
     wire signed [7:0] Q;
     wire              Qm1;
     wire        [1:0] cnt;
-    wire signed [8:0] precomputed_M [0:3];
+    wire signed [8:0] precomputed_M[0:3];
 
-    assign A_out = A;
-    assign Q_out = Q;
+    assign A_out   = A;
+    assign Q_out   = Q;
     assign Qm1_out = Qm1;
     assign cnt_out = cnt;
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 0) Set registers and Input Bus M
     //––––––––––––––––––––––––––––––––––––––––––––––––
-    
+
     register #(9) inbus_rgst_M (
         .clk(clk),
         .rst_b(rst_b),
@@ -179,11 +181,11 @@ module booth_radix4_multiplier (
     // register for Qm1, initialize to 0 on c0 (updated below after shifter)
     // register for counter, initialize to 0 on c0
     register #(2) regCnt (
-      .clk    (clk),
-      .rst_b  (rst_b),
-      .enable (c[0]),
-      .in     (2'b0),
-      .out    (cnt)
+        .clk   (clk),
+        .rst_b (rst_b),
+        .enable(c[0]),
+        .in    (2'b0),
+        .out   (cnt)
     );
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
@@ -192,25 +194,25 @@ module booth_radix4_multiplier (
     // Q register: combined load, see below after shifter
 
     // Precompute signed multiples of M for Booth:
-    assign precomputed_M[0] = M;             // +1·M
-    assign precomputed_M[1] = M <<< 1;       // +2·M
-    assign precomputed_M[2] = -M;            // ~1·M
-    assign precomputed_M[3] = -(M <<< 1);    // ~2·M
+    assign precomputed_M[0] = M;  // +1·M
+    assign precomputed_M[1] = M <<< 1;  // +2·M
+    assign precomputed_M[2] = -M;  // ~1·M
+    assign precomputed_M[3] = -(M <<< 1);  // ~2·M
 
-    assign ctrl_bits = { Q[1], Q[0], Qm1 };
+    assign ctrl_bits        = {Q[1], Q[0], Qm1};
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 2) Select which multiple under c2,c3,c4
     //––––––––––––––––––––––––––––––––––––––––––––––––
     wire [8:0] additionM;
     select_multiplicand sel_u (
-        .c3      (c[3]),
-        .c4      (c[4]),
+        .c3    (c[3]),
+        .c4    (c[4]),
         .pre_M0(precomputed_M[0]),
         .pre_M1(precomputed_M[1]),
         .pre_M2(precomputed_M[2]),
         .pre_M3(precomputed_M[3]),
-        .M(additionM)
+        .M     (additionM)
     );
     // 4→1 mux for chosen multiple
 
@@ -219,75 +221,81 @@ module booth_radix4_multiplier (
     //––––––––––––––––––––––––––––––––––––––––––––––––
     wire signed [8:0] sumA;
     adder adder_inst (
-    .a       (A),
-    .b       (additionM),
-    .carry_in(1'b0),
-    .sum     (sumA)
+        .a       (A),
+        .b       (additionM),
+        .carry_in(1'b0),
+        .sum     (sumA)
     );
 
     // Expose sumA and additionM for debug
-    assign debug_sumA  = sumA;
-    assign debug_addM  = additionM;
+    assign debug_sumA = sumA;
+    assign debug_addM = additionM;
 
     // Next-A logic: combinational logic for nextA and ldA
     wire ldA;
     wire signed [8:0] nextA;
-    assign ldA = c[2];
-    assign nextA = sumA;
+    assign ldA         = c[2];
+    assign nextA       = sumA;
 
 
     // Expose ldA and nextA for debug
-    assign debug_ldA     = ldA;
-    assign debug_nextA   = nextA;
-    
+    assign debug_ldA   = ldA;
+    assign debug_nextA = nextA;
+
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 4) Shift–register for {A,Q,Qm1}
     //––––––––––––––––––––––––––––––––––––––––––––––––
 
     wire signed [17:0] full_slice = {A, Q, Qm1};
     wire signed [17:0] shifted_slice;
-    
-    right_shifter #(18) arithmetic_r_sh(
+
+    right_shifter #(18) arithmetic_r_sh (
         .enable(c[5]),
         .in(full_slice),
         .out(shifted_slice)
     );
 
     // after shifting
-    wire [7:0]  Q_shifted   = shifted_slice[8:1];
-    wire        Qm1_shifted = shifted_slice[0];
+    wire [7:0] Q_shifted = shifted_slice[8:1];
+    wire       Qm1_shifted = shifted_slice[0];
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
     // 5) Slice “shift_out” into A, Q, Qm1
     //––––––––––––––––––––––––––––––––––––––––––––––––
 
     // Q register: loads inbus on c1, shifted Q on c5
-    register #(.WIDTH(8)) regQ (
-      .clk    (clk),
-      .rst_b  (rst_b),
-      .enable (c[1] | c[5]),
-      .in     (c[1] ? inbus : Q_shifted),
-      .out    (Q)
+    register #(
+        .WIDTH(8)
+    ) regQ (
+        .clk   (clk),
+        .rst_b (rst_b),
+        .enable(c[1] | c[5]),
+        .in    (c[1] ? inbus : Q_shifted),
+        .out   (Q)
     );
 
     // Qm1 register: loads 0 on c0, shifted Qm1 on c5
-    register #(.WIDTH(1)) regQm1 (
-      .clk    (clk),
-      .rst_b  (rst_b),
-      .enable (c[0] | c[5]),
-      .in     (c[0] ? 1'b0 : Qm1_shifted),
-      .out    (Qm1)
+    register #(
+        .WIDTH(1)
+    ) regQm1 (
+        .clk   (clk),
+        .rst_b (rst_b),
+        .enable(c[0] | c[5]),
+        .in    (c[0] ? 1'b0 : Qm1_shifted),
+        .out   (Qm1)
     );
 
     // Separate register for A: loads on c0, c2, c5 using nextA as before
     wire signed [8:0] regA_in;
     assign regA_in = c[0] ? 9'sd0 : (c[2] ? nextA : shifted_slice[17:9]);
-    register #(.WIDTH(9)) regA (
-      .clk    (clk),
-      .rst_b  (rst_b),
-      .enable (c[0] | c[2] | c[5]),
-      .in     (regA_in),
-      .out    (A)
+    register #(
+        .WIDTH(9)
+    ) regA (
+        .clk   (clk),
+        .rst_b (rst_b),
+        .enable(c[0] | c[2] | c[5]),
+        .in    (regA_in),
+        .out   (A)
     );
 
     //––––––––––––––––––––––––––––––––––––––––––––––––
@@ -301,8 +309,8 @@ module booth_radix4_multiplier (
         .cnt(cnt)
     );
 
-    counter_check cnt_check(
-        .cnt(cnt),
+    counter_check cnt_check (
+        .cnt (cnt),
         .cnt3(count3)
     );
 
@@ -329,7 +337,7 @@ module booth_radix4_multiplier (
     //––––––––––––––––––––––––––––––––––––––––––––––––
     //
     //––––––––––––––––––––––––––––––––––––––––––––––––
-    
+
 endmodule
 
 /*
@@ -399,18 +407,16 @@ module control_unit (
             CHECK_CTRL_BITS: begin
                 ctrl_sig = 9'b0;
                 if (ctrl_bits == 3'b000 | ctrl_bits == 3'b111) begin
-                    
+
                     ctrl_sig[5] = 1;
                     next_state  = SHIFT_RIGHT;
-                end
+                end else begin
 
-                else begin
+                    ctrl_sig[2] = 1;
+                    ctrl_sig[3] = (~ctrl_bits[2] & ctrl_bits[1] & ctrl_bits[0]) | (ctrl_bits[2] & ~ctrl_bits[1] & ~ctrl_bits[0]);
+                    ctrl_sig[4] = (ctrl_bits[2] & ~ctrl_bits[0]) | (ctrl_bits[2] & ~ctrl_bits[1]);
 
-                ctrl_sig[2] = 1;
-                ctrl_sig[3] = (~ctrl_bits[2] & ctrl_bits[1] & ctrl_bits[0]) | (ctrl_bits[2] & ~ctrl_bits[1] & ~ctrl_bits[0]);
-                ctrl_sig[4] = (ctrl_bits[2] & ~ctrl_bits[0]) | (ctrl_bits[2] & ~ctrl_bits[1]);
-
-                next_state = ADD_MULTIPLICAND;
+                    next_state = ADD_MULTIPLICAND;
 
                 end
             end
@@ -462,126 +468,123 @@ module control_unit (
 endmodule
 
 
-`timescale 1ns/1ps
+`timescale 1ns / 1ps
 
 module tb_booth_radix4;
 
-  // clocks and control
-  reg         clk;
-  reg         rst_b;
-  reg         start;
-  reg  signed [7:0] inbus;
-  
-  // wires between CU <-> DUT
-  wire [8:0]  c;
-  wire [2:0]  ctrl_bits;
-  wire        count3;
-  wire        end_op;
-  wire signed [15:0] outbus;
+    // clocks and control
+    reg                clk;
+    reg                rst_b;
+    reg                start;
+    reg signed  [ 7:0] inbus;
 
-  // debug
-  wire [8:0] A_out;
-  wire [7:0] Q_out;
-  wire Qm1_out;
-  wire [1:0] cnt_out;
-  // adder/nextA debug signals
-  wire signed [8:0] debug_sumA_tb, debug_addM_tb, debug_nextA_tb;
-  wire              debug_ldA_tb;
+    // wires between CU <-> DUT
+    wire        [ 8:0] c;
+    wire        [ 2:0] ctrl_bits;
+    wire               count3;
+    wire               end_op;
+    wire signed [15:0] outbus;
 
-  // DUT: Booth multiplier datapath
-  booth_radix4_multiplier dut (
-    .clk      (clk),
-    .rst_b    (rst_b),
-    .inbus    (inbus),
-    .c        (c),
-    .count3   (count3),
-    .ctrl_bits(ctrl_bits),
-    .outbus   (outbus),
+    // debug
+    wire        [ 8:0] A_out;
+    wire        [ 7:0] Q_out;
+    wire               Qm1_out;
+    wire        [ 1:0] cnt_out;
+    // adder/nextA debug signals
+    wire signed [8:0] debug_sumA_tb, debug_addM_tb, debug_nextA_tb;
+    wire debug_ldA_tb;
 
-    .A_out(A_out),
-    .Q_out(Q_out),
-    .Qm1_out(Qm1_out),
-    .cnt_out(cnt_out),
-    // connect debug ports
-    .debug_sumA (debug_sumA_tb),
-    .debug_addM (debug_addM_tb),
-    .debug_ldA  (debug_ldA_tb),
-    .debug_nextA(debug_nextA_tb)
-  );
+    // DUT: Booth multiplier datapath
+    booth_radix4_multiplier dut (
+        .clk      (clk),
+        .rst_b    (rst_b),
+        .inbus    (inbus),
+        .c        (c),
+        .count3   (count3),
+        .ctrl_bits(ctrl_bits),
+        .outbus   (outbus),
 
-  // CU: control‐signal generator
-  // pad the 3‐bit ctrl_bits up to 4 bits with a leading 0
-  control_unit cu (
-    .clk       (clk),
-    .rst_b     (rst_b),
-    .begin_op  (start),
-    .op_code   (2'b10),
-    .ctrl_bits (ctrl_bits),
-    .count3    (count3),
-    .ctrl_sig  (c),
-    .end_op    (end_op)
-  );
-
-  // clock gen: 10 ns period
-  initial clk = 0;
-    always #5 clk = ~clk;
-  // Instrumentation: print intermediate values each clock
-  integer cycle;
-  integer timeout;
-  initial begin 
-    cycle = 0;
-    $monitor(
-      "cycle=%0d | c=%b | ctrl_bits=%b | count3=%b | outbus=%h\nA=%d | Q=%d | Qm1=%b |  ldA=%b | sumA=%d | addM=%d | nextA=%d ",
-    cycle,
-      c, ctrl_bits, count3, outbus, A_out, Q_out, Qm1_out, debug_ldA_tb, debug_sumA_tb, debug_addM_tb, debug_nextA_tb
+        .A_out(A_out),
+        .Q_out(Q_out),
+        .Qm1_out(Qm1_out),
+        .cnt_out(cnt_out),
+        // connect debug ports
+        .debug_sumA(debug_sumA_tb),
+        .debug_addM(debug_addM_tb),
+        .debug_ldA(debug_ldA_tb),
+        .debug_nextA(debug_nextA_tb)
     );
-  end
 
-  always @(posedge clk) begin
-    cycle = cycle + 1;
-  end
+    // CU: control‐signal generator
+    // pad the 3‐bit ctrl_bits up to 4 bits with a leading 0
+    control_unit cu (
+        .clk      (clk),
+        .rst_b    (rst_b),
+        .begin_op (start),
+        .op_code  (2'b10),
+        .ctrl_bits(ctrl_bits),
+        .count3   (count3),
+        .ctrl_sig (c),
+        .end_op   (end_op)
+    );
 
-  initial begin
-    // 1) reset
-    rst_b  = 0;
-    start  = 0;
-    inbus  = 0;
-    #20;       // hold reset for two cycles
-    rst_b  = 1;
-    #10;
-
-    // drive M, pulse begin_op exactly on a rising‐edge
-    inbus = 8'sd7;
-    @(posedge clk);      // wait for a clean edge
-    start = 1;
-    @(posedge clk);      // hold start through this rising edge
-    start = 0;
-
-    // drive Q on the next edge
-    inbus = 8'sd3;
-    @(posedge clk);      // Q load edge
-
-    // 3) wait for end_op (c8) from the CU, but time out after 50 cycles
-    timeout = 0;
-    while (!end_op && timeout < 50) begin
-      @(posedge clk);
-      timeout = timeout + 1;
+    // clock gen: 10 ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
+    // Instrumentation: print intermediate values each clock
+    integer cycle;
+    integer timeout;
+    initial begin
+        cycle = 0;
+        $monitor(
+            "cycle=%0d | c=%b | ctrl_bits=%b | count3=%b | outbus=%h\nA=%d | Q=%d | Qm1=%b |  ldA=%b | sumA=%d | addM=%d | nextA=%d ",
+            cycle, c, ctrl_bits, count3, outbus, A_out, Q_out, Qm1_out, debug_ldA_tb,
+            debug_sumA_tb, debug_addM_tb, debug_nextA_tb);
     end
-    if (!end_op) begin
-      $error("TIMEOUT: end_op not asserted after %0d cycles", timeout);
-      $finish;
+
+    always @(posedge clk) begin
+        cycle = cycle + 1;
     end
-    #10;
 
-    // 4) check result
-    $display("DUT produced %0d, expected %0d", outbus, 7*3);
-    if (outbus !== 7*3)
-      $error("❌ TEST FAILED: 7×3 ≠ %0d", outbus);
-    else
-      $display ("✅ TEST PASSED");
+    initial begin
+        // 1) reset
+        rst_b = 0;
+        start = 0;
+        inbus = 0;
+        #20;  // hold reset for two cycles
+        rst_b = 1;
+        #10;
 
-    $finish;
-  end
+        // drive M, pulse begin_op exactly on a rising‐edge
+        inbus = 8'sd7;
+        @(posedge clk);  // wait for a clean edge
+        start = 1;
+        @(posedge clk);  // hold start through this rising edge
+        start = 0;
+
+        // drive Q on the next edge
+        inbus = 8'sd3;
+        @(posedge clk);  // Q load edge
+
+        // 3) wait for end_op (c8) from the CU, but time out after 50 cycles
+        timeout = 0;
+        while (!end_op && timeout < 50) begin
+            @(posedge clk);
+            timeout = timeout + 1;
+        end
+        if (!end_op) begin
+            $error("TIMEOUT: end_op not asserted after %0d cycles", timeout);
+            $finish;
+        end
+        #10;
+
+        // 4) check result
+        $display("DUT produced %0d, expected %0d", outbus, 7 * 3);
+        if (outbus !== 7 * 3) $error("❌ TEST FAILED: 7×3 ≠ %0d", outbus);
+        else $display("✅ TEST PASSED");
+
+        $finish;
+    end
 
 endmodule
 
