@@ -1,7 +1,5 @@
 // rework on FSM, one-hot style
 
-// de adaugat ce valori se pun in Q, Q prim
-
 module control_unit_one_hot (
     input wire reset, // sets state to IDLE // active on 0
     clk,
@@ -32,6 +30,9 @@ module control_unit_one_hot (
     output wire select2Msum, // 0 if sum is with +-1M; 1 if +-2M
     output wire selectQprimcorrection, // 1 if adds 1 to Q prim // SRT-2 correction
     output wire selectQandQprimdif, // 1 if Q and Q prim dif is used // SRT-2 specific
+    output wire write_to_Qs_enable, // 1 if CU needs to write value to LSb of Q and Qprim registers
+    output wire Q_value, // value to be written in LSb of Q // for SRT-2
+    output wire Qprim_value, // value to be written in LSb of Qprim // for SRT-2
     output wire END  // upper-case because of syntax
 );
 
@@ -102,7 +103,7 @@ module control_unit_one_hot (
         .reset(reset),
         .load_enable(1'b1),
         .data_in ( interm_decision_on_flag_bits_of_A & sgn_bit_of_M ), // sgn_bit_of_M just to be sure // shouldn't be needed
-        .data_out(decision_on_flag_bits_of_A)
+        .data_out( decision_on_flag_bits_of_A )
     );
 
     // values for other decisional wires
@@ -262,5 +263,10 @@ module control_unit_one_hot (
                                     | ( op_code[1] & op_code[0] & ~bits_of_A[2] ) // for div
                                  )
                                );
+    
+    // values to be written in SRT-2 Q and Qprim registers  
+    assign write_to_Qs_enable = next_state[LSHIFT];
+    assign Q_value = decision_on_flag_bits_of_A & ~bits_of_A[2];
+    assign Qprim_value = decision_on_flag_bits_of_A & bits_of_A[2];
 
 endmodule
