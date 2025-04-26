@@ -1,5 +1,7 @@
 // rework on FSM, one-hot style
 
+// de adaugat ce valori se pun in Q, Q prim
+
 module control_unit_one_hot (
     input wire reset, // sets state to IDLE // active on 0
     clk,
@@ -20,6 +22,8 @@ module control_unit_one_hot (
     output wire loadQprimregisterfromADDER, // load adder result to Q prim register // specific for correction in SRT-2
     output wire loadQregisterfromADDER, // load adder result to Q register // when formating SRT-2 result
     output wire increment_Radix4Counter, // increment Radix-4 counter
+    output wire RSHIFT_signal, // RSHIFT registers
+    output wire LSHIFT_signal, // LSHIFT registers
     output wire increment_SRT2Counter, // increment SRT-2 normal counter
     output wire pushAregister, // push A register to OUTBUS
     output wire pushQregister, // push Q register to OUTBUS
@@ -33,39 +37,40 @@ module control_unit_one_hot (
 
     // localparam to easily acces number of states
 
-    localparam number_of_states = 16;
+    localparam number_of_states = 17;
 
     // prin localparam sunt definiti indecsii pe care ii ocupa starile in registrul de stare // ca reprezentare pe biti
 
     localparam IDLE = 0;  // starea de idle
 
     // starile de load registers
-    localparam LOADA = 1;
-    localparam LOADQ = 2;  // aici se face si init pe Q[-1], Q'
-    localparam LOADM = 3;  // aici se face si init contoare
+    localparam LOADA = IDLE + 1;
+    localparam LOADQ = LOADA + 1;  // aici se face si init pe Q[-1], Q'
+    localparam LOADM = LOADQ + 1;  // aici se face si init contoare
 
     // starile care folosesc sumatorul // in timpul lor se incarca registrii cu rezultatul // <=> semnalele care determina tipul de suma sunt setate dinainte
-    localparam ADDMtoA = 4;  // valabil pentru +- {1;2}
-    localparam ADDMtoACORRECTION = 5;  // valabil doar pentru corectie
-    localparam ADD1toQprim = 6;  // pentru corectie
-    localparam ADDminQprimtoQ = 7;  // pentru final SRT-2 ( Q := Q - Q' )
+    localparam ADDMtoA = LOADM + 1;  // valabil pentru +- {1;2}
+    localparam ADDMtoACORRECTION = ADDMtoA + 1;  // valabil doar pentru corectie
+    localparam ADD1toQprim = ADDMtoACORRECTION + 1;  // pentru corectie
+    localparam ADDminQprimtoQ = ADD1toQprim + 1;  // pentru final SRT-2 ( Q := Q - Q' )
 
     // starile de output
-    localparam PUSHA = 8;
-    localparam PUSHQ = 9;
+    localparam PUSHA = ADDminQprimtoQ + 1;
+    localparam PUSHQ = PUSHA + 1;
 
     // stari RSHIFT // specifice Radix-4
-    localparam RSHIFT = 10;
-    localparam COUNTRSHIFTs = 11;  // incrementare counter Radix-4
+    localparam RSHIFT = PUSHQ + 1;
+    localparam RSHIFT_DOUBLE = RSHIFT + 1;
+    localparam COUNTRSHIFTs = RSHIFT_DOUBLE + 1;  // incrementare counter Radix-4
 
     // stari LSHIFT // specifice SRT-2
-    localparam LSHIFT = 12;
-    localparam COUNTLSHIFTs = 13;  // incrementare counter SRT-2
+    localparam LSHIFT = COUNTRSHIFTs + 1;
+    localparam COUNTLSHIFTs = LSHIFT + 1;  // incrementare counter SRT-2
 
     // stari SRT-2 care tin cont de leading 0s for divisor
     // starile de corectie sunt reprezentate prin a tine cont de operatie si un registru suplimentar ca flag
-    localparam LSHIFTfor0 = 14;  // eliminare leading 0s from divisor
-    localparam RSHIFTfor0 = 15;  // corectie in functie de leading 0s from divisor
+    localparam LSHIFTfor0 = COUNTLSHIFTs + 1;  // eliminare leading 0s from divisor
+    localparam RSHIFTfor0 = COUNTRSHIFTs + 1;  // corectie in functie de leading 0s from divisor
 
     // wires for actual and next state
     wire [number_of_states - 1 : 0] act_state;
@@ -226,6 +231,10 @@ module control_unit_one_hot (
     //increment normal counters
     assign increment_Radix4Counter = next_state[COUNTRSHIFTs];
     assign increment_SRT2Counter = next_state[COUNTLSHIFTs];
+    
+    // shift registers
+    assign RSHIFT_signal = next_state[RSHIFT] | next_state[RSHIFT_DOUBLE];
+    assign LSHIFT_signal = next_state[LSHIFT];
     
     // sum control signals
     assign loadAregisterfromADDER = next_state[ADDMtoA] | next_state[ADDMtoACORRECTION];
