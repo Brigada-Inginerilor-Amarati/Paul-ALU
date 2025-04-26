@@ -23,6 +23,11 @@ module control_unit_one_hot (
     output wire increment_SRT2Counter, // increment SRT-2 normal counter
     output wire pushAregister, // push A register to OUTBUS
     output wire pushQregister, // push Q register to OUTBUS
+    output wire select_sum_or_dif, // 0 if adder calculates a sum of operands; 1 if difference
+    output wire selectAandMsum, // 1 if A and M sum is selected; 0 if not
+    output wire select2Msum, // 0 if sum is with +-1M; 1 if +-2M
+    output wire selectQprimcorrection, // 1 if adds 1 to Q prim // SRT-2 correction
+    output wire selectQandQprimdif, // 1 if Q and Q prim dif is used // SRT-2 specific
     output wire END  // upper-case because of syntax
 );
 
@@ -230,5 +235,23 @@ module control_unit_one_hot (
     // OUTBUS loading signals
     assign pushAregister = next_state[PUSHA];
     assign pushQregister = next_state[PUSHQ];
+    
+    // adder operand control signals
+    assign selectAandMsum = next_state[ADDMtoA] | next_state[ADDMtoACORRECTION];
+    assign select2Msum = next_state[ADDMtoA] & op_code[1] & ~op_code[0]
+                       & ( 
+                            ( ~bits_of_Q[2] & bits_of_Q[1] & bits_of_Q[0] )
+                            | ( bits_of_Q[2] & ~bits_of_Q[1] & ~bits_of_Q[0] )
+                         );
+    assign selectQprimcorrection = next_state[ADD1toQprim];
+    assign selectQandQprimdif = next_state[ADDminQprimtoQ];
+    assign select_sum_or_dif = selectQandQprimdif
+                             | ( selectAandMsum
+                               & (
+                                    ( ~op_code[0] & op_code[1] ) // for dif
+                                    | ( op_code[1] & ~op_code[0] & bits_of_Q[2] ) // for mul
+                                    | ( op_code[1] & op_code[0] & ~bits_of_A[2] ) // for div
+                                 )
+                               );
 
 endmodule
