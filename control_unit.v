@@ -1,7 +1,7 @@
 // rework on FSM, one-hot style
 
 module control_unit_one_hot (
-    input wire reset,
+    input wire reset, // sets state to IDLE // active on 0
     clk,
     BEGIN,  // upper-case because of syntax
     input wire [1 : 0] op_code,  // operation code // 00 - add, 01- sub, 10 - mul, 11 - div
@@ -11,6 +11,18 @@ module control_unit_one_hot (
     input wire countSRT2full,  // wire if Counter for SRT-2 is full // value is 7
     input wire countRadix4full,  // similar wire, for Radix-4 // value is 3
     input wire countLeading0sempty,  // similar wire, for SRT-2 Leading0s // value is 0
+    output wire loadAregister_from_INBUS, loadQregister_from_INBUS, loadMregister_from_INBUS, // load A/Q/M register from INBUS
+    output wire initAregisterto0, // init A register to 0 for mul operation
+    output wire initQandQprimregisters, // initialise with 0 Qprim and Q[-1] registers // Q[-1] mathematically
+    output wire initCounters, // initialise with 0 Qprim and Q[-1] registers // Q[-1] mathematically
+    output wire increment_Leading0s, decrement_Leading0s, // in/decrement Leading0s counter // specific SRT-2
+    output wire loadAregisterfromADDER, // load adder result to A register
+    output wire loadQprimregisterfromADDER, // load adder result to Q prim register // specific for correction in SRT-2
+    output wire loadQregisterfromADDER, // load adder result to Q register // when formating SRT-2 result
+    output wire increment_Radix4Counter, // increment Radix-4 counter
+    output wire increment_SRT2Counter, // increment SRT-2 normal counter
+    output wire pushAregister, // push A register to OUTBUS
+    output wire pushQregister, // push Q register to OUTBUS
     output wire END  // upper-case because of syntax
 );
 
@@ -127,55 +139,96 @@ module control_unit_one_hot (
     // can be optimised and factorised, right now written for clarity from FSM "schmematic"
 
     // endings are considered graceful endings here
-    assign next_state[IDLE] = (act_state[IDLE] & ~BEGIN)  // waiting for BEGIN signal
-        | (~op_code[1] & (act_state[PUSHA]))  // for add and sub operations ending
-        | (op_code[1] & ~op_code[0] & act_state[PUSHQ])  // for mul operation ending
-        | (op_code[1] & op_code[0] & act_state[PUSHA]);  // for div operation ending
+    assign next_state[IDLE] =  ~reset // when HW is reset
+                            | ( act_state[IDLE] & ~BEGIN )  // waiting for BEGIN signal
+                            | ( ~op_code[1] & act_state[PUSHA] )  // for add and sub operations ending
+                            | ( op_code[1] & ~op_code[0] & act_state[PUSHQ] )  // for mul operation ending
+                            | ( op_code[1] & op_code[0] & act_state[PUSHA] );  // for div operation ending
 
     // loading input states
-    assign next_state[LOADA] = BEGIN & ( ( ~op_code[1] ) | ( op_code[1] & op_code[0] ) ); // for add, sub, div
-    assign next_state[LOADQ] = (BEGIN & (op_code[1] & ~op_code[0]))  // for mul
-        | (act_state[LOADA] & op_code[1] & op_code[0]);  // for div
-    assign next_state[LOADM] = (act_state[LOADA] & ~op_code[1])  // for add, sub
-        | act_state[LOADQ];  // for for mul, div
+    assign next_state[LOADA] = reset & BEGIN & ( ( ~op_code[1] ) | ( op_code[1] & op_code[0] ) ); // for add, sub, div
+    assign next_state[LOADQ] = reset & ( (BEGIN & (op_code[1] & ~op_code[0]))  // for mul
+        | ( act_state[LOADA] & op_code[1] & op_code[0] ) );  // for div
+    assign next_state[LOADM] = reset & ( (act_state[LOADA] & ~op_code[1])  // for add, sub
+        | act_state[LOADQ] );  // for for mul, div
 
     // following states expressions need to be completed depending on signals, flag, decisions
     // decision_based_on_correction needs to be split between decision_based_on_SRT2_counter and decision_based_on_MSb_of_A
     // decision_based_on_correction_other needs to be split between decision_based_on_SRT2_counter and ~decision_based_on_MSb_of_A
 
     // states using the adder
-    assign next_state[ADDMtoA] = (act_state[LOADM] & ~op_code[1])  // for add, sub
+    assign next_state[ADDMtoA] = reset & ( (act_state[LOADM] & ~op_code[1])  // for add, sub
         | (act_state[LOADM] & op_code[1] & ~op_code[0] & decision_on_bits_of_Q)  // for mul
         | (act_state[COUNTRSHIFTs] & decision_on_bits_of_Q)
         // for div // only from LSHIFT state with decision on ( flag ) leading bits of A
-        | (act_state[LSHIFT] & decision_on_flag_bits_of_A);
-    assign next_state[ADDMtoACORRECTION] = ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction ) // only for div correction // correction needs to be decided on SRT-2 counter and MSb of A
-        | ( act_state[LSHIFT] & ~decision_on_flag_bits_of_A & decision_based_on_correction ); // skip ADDMtoA from LSHIFT
-    assign next_state[ADD1toQprim] = ( act_state[ADDMtoACORRECTION] ); // to complete SRT-2 correction
-    assign next_state[ADDminQprimtoQ] = ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction_other ) // to find real value of Q register in SRT-2 algorithm
+        | (act_state[LSHIFT] & decision_on_flag_bits_of_A) );
+    assign next_state[ADDMtoACORRECTION] = reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction ) // only for div correction // correction needs to be decided on SRT-2 counter and MSb of A
+        | ( act_state[LSHIFT] & ~decision_on_flag_bits_of_A & decision_based_on_correction ) ); // skip ADDMtoA from LSHIFT
+    assign next_state[ADD1toQprim] = reset & ( ( act_state[ADDMtoACORRECTION] ) ); // to complete SRT-2 correction
+    assign next_state[ADDminQprimtoQ] = reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction_other ) // to find real value of Q register in SRT-2 algorithm
         | ( act_state[LSHIFT] & decision_based_on_correction_other )
-                                       | ( act_state[ADD1toQprim] ); // if correction was applied
+                                       | ( act_state[ADD1toQprim] ) ); // if correction was applied
 
     // states for OUTBUS loading
-    assign next_state[PUSHA] = (act_state[ADDMtoA] & ~op_code[1])  // for add, sub
+    assign next_state[PUSHA] = reset & ( (act_state[ADDMtoA] & ~op_code[1])  // for add, sub
         | (act_state[RSHIFT] & decision_based_on_Radix4_counter)  // for mul
-        | (act_state[PUSHQ] & op_code[1] & op_code[0]);  // for div
-    assign next_state[PUSHQ] = (act_state[PUSHA] & op_code[1] & ~op_code[0])  // for mul
+        | (act_state[PUSHQ] & op_code[1] & op_code[0]) );  // for div
+    assign next_state[PUSHQ] = reset & ( (act_state[PUSHA] & op_code[1] & ~op_code[0])  // for mul
         | (act_state[ADDminQprimtoQ] & decision_based_on_Leading0s_counter)  // for div
-        | (act_state[RSHIFTfor0] & decision_based_on_Leading0s_counter);
+        | (act_state[RSHIFTfor0] & decision_based_on_Leading0s_counter) );
 
     // states for Radix-4 right shifting // specific only for mul
-    assign next_state[RSHIFT] = (act_state[ADDMtoA] & op_code[1] & ~op_code[0]);
-    assign next_state[COUNTRSHIFTs] = (act_state[RSHIFT] & ~decision_based_on_Radix4_counter);
+    assign next_state[RSHIFT] = reset & ( (act_state[ADDMtoA] & op_code[1] & ~op_code[0]) );
+    assign next_state[COUNTRSHIFTs] = reset & ( (act_state[RSHIFT] & ~decision_based_on_Radix4_counter) );
 
     // states for SRT-2 left shifting // result calculation Lshifts // general-case
-    assign next_state[LSHIFT] = ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s ) // also need to update the flags for ADDMtoA next_next_state
-        | (act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s);
-    assign next_state[COUNTLSHIFTs] = ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_SRT2_counter )
-                                  | ( act_state[LSHIFT] & ~decision_on_flag_bits_of_A & decision_based_on_SRT2_counter );
+    assign next_state[LSHIFT] = reset & ( ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s ) // also need to update the flags for ADDMtoA next_next_state
+        | (act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s) );
+    assign next_state[COUNTLSHIFTs] = reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_SRT2_counter )
+                                  | ( act_state[LSHIFT] & ~decision_on_flag_bits_of_A & decision_based_on_SRT2_counter ) );
 
     // states for SRT-2 operand formatting
-    assign next_state[LSHIFTfor0] = ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s );
-    assign next_state[RSHIFTfor0] = ( act_state[ADDminQprimtoQ] & ~decision_based_on_Leading0s_counter );
+    assign next_state[LSHIFTfor0] = reset
+                                  & (
+                                      ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s )
+                                      | ( act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s )
+                                  );
+    assign next_state[RSHIFTfor0] = reset
+                                  & (
+                                      ( act_state[ADDminQprimtoQ] & ~decision_based_on_Leading0s_counter )
+                                      | ( act_state[RSHIFTfor0] & ~decision_based_on_Leading0s_counter )
+                                  );
+    
+    // assigning all output signals // control signals for HW architecture
+    
+    // external signal
+    assign END = next_state[IDLE] & ~act_state[IDLE] & reset; // when changing state to IDLE and program was not already in IDLE and HW was not reset
+    
+    // load registers from INBUS
+    assign loadAregister_from_INBUS = next_state[LOADA];
+    assign loadQregister_from_INBUS = next_state[LOADQ];
+    assign loadMregister_from_INBUS = next_state[LOADM];
+    
+    // init registers
+    assign initAregisterto0 = next_state[LOADQ] & op_code[1] & ~op_code[0];
+    assign initQandQprimregisters = next_state[LOADM];
+    assign initCounters = next_state[LOADM];
+    
+    // control leading 0s
+    assign increment_Leading0s = next_state[LSHIFTfor0];
+    assign decrement_Leading0s = next_state[RSHIFTfor0];
+    
+    //increment normal counters
+    assign increment_Radix4Counter = next_state[COUNTRSHIFTs];
+    assign increment_SRT2Counter = next_state[COUNTLSHIFTs];
+    
+    // sum control signals
+    assign loadAregisterfromADDER = next_state[ADDMtoA] | next_state[ADDMtoACORRECTION];
+    assign loadQprimregisterfromADDER = next_state[ADD1toQprim];
+    assign loadQregisterfromADDER = next_state[ADDminQprimtoQ];
+    
+    // OUTBUS loading signals
+    assign pushAregister = next_state[PUSHA];
+    assign pushQregister = next_state[PUSHQ];
 
 endmodule
