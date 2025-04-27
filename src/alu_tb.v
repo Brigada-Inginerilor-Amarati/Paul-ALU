@@ -1,3 +1,4 @@
+/*
 `include "adder_rca.v"
 `include "alu.v"
 `include "control_unit.v"
@@ -5,6 +6,8 @@
 `include "dff.v"
 `include "mux.v"
 `include "rgst.v"
+*/
+`timescale 1ns / 1ns
 
 module alu_tb;
 
