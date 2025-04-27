@@ -12,6 +12,7 @@ module rgst #(
     left_shift_value,
     input wire right_shift_enable,
     right_shift_value,
+    input wire jump_LSb, // wire to know if LSb is supposed to be jumped in LSHIFT // in SRT-2 normal LSHIFT
     output wire [width-1:0] data_out
 );  // e nevoie de MUX pentru data_in pe registrul A ( iesire adder, inbus )
 
@@ -34,6 +35,12 @@ module rgst #(
             end else if (i == 0) begin
                 mux_4_to_1 mux_inst (  // left, right, sum/inbus, keep
                     .data_in ({left_shift_value, data_out[i+1], data_in[i], data_out[i]}),
+                    .select  (selector_mux),
+                    .data_out(data_interm[i])
+                );
+            end else if (i == 1) begin
+                mux_4_to_1 mux_inst (  // left, right, sum/inbus, keep
+                    .data_in ({ ( left_shift_value & jump_LSb ) | ( data_out[i - 1] & ~jump_LSb ), data_out[i+1], data_in[i], data_out[i]}),
                     .select  (selector_mux),
                     .data_out(data_interm[i])
                 );
