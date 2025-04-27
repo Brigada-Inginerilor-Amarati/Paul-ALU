@@ -1,12 +1,9 @@
-`timescale 1ns / 1ns
-
 module rgst #(
     parameter width = 9
 ) (
     input wire clk,
     reset,
     input wire load_enable,
-    load,
     input wire [width-1:0] data_in,
     input wire left_shift_enable,
     left_shift_value,
