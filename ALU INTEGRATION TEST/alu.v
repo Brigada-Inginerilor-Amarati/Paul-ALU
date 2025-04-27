@@ -246,11 +246,80 @@ module alu (
     // MUXs FOR ADDER DATA INPUTS
     //==========================================
     
-    generate
+    wire [8 : 0] hileftMUX, loleftMUX, hirightMUX, lorightMUX, hiMUX, loMUX;
+    assign operand_A = hiMUX;
+    assign operand_B = loMUX;
+    
+    generate // (-1) operands taken care of by sum or dif signal
       
       for ( i = 0; i < 9; i = i + 1 ) begin
         
+        // written with 2 to 1 MUXs instead of 4 to 1 MUXs
+        // for ease of writing, according to signals from CU
         
+        // left side == A and 1/2M; right side == 1/Q and +-Qprim
+        
+        // hi side
+        // for OPERAND A // can be ::   A   A   A   A   1       Q
+        
+        // left side
+        mux_2_to_1 hiMUX_A_A (
+          .data_in ( { A[i], A[i] } ),
+          .select ( select2Msum ),
+          .data_out ( hileftMUX[i] )
+        );
+        
+        // right side
+        if ( i == 0 ) // for LSb of 1
+          mux_2_to_1 hiMUX_1_Q (
+            .data_in ( { 1'b1, Q[i] } ),
+            .select ( selectQprimcorrection & ~selectQandQprimdif ),
+            .data_out ( hirightMUX[i] )
+          );
+        else
+          mux_2_to_1 hiMUX_1_Q (
+            .data_in ( { 1'b0, Q[i] } ),
+            .select ( selectQprimcorrection & ~selectQandQprimdif ),
+            .data_out ( hirightMUX[i] )
+          );
+          
+        // final choice
+        mux_2_to_1 hiMUX_final (
+          .data_in ( { hileftMUX[i], hirightMUX[i] } ),
+          .select ( selectAandMsum & ~selectQandQprimdif & ~selectQprimcorrection ),
+          .data_out ( hiMUX[i] )
+        );
+        
+        // lo side
+        // for OPERAND B // can be :: +1M -1M +2M -2M Qprim  -Qprim
+        
+        // left side
+        if ( i == 0 ) // for LSb of M in case of 2M
+          mux_2_to_1 loMUX_1M_2M (
+            .data_in ( { 1'b0, M[i] } ),
+            .select ( select2Msum ),
+            .data_out ( loleftMUX[i] )
+          );
+        else
+          mux_2_to_1 loMUX_1M_2M (
+            .data_in ( { M[i - 1], M[i] } ),
+            .select ( select2Msum ),
+            .data_out ( loleftMUX[i] )
+          );
+          
+        // right side
+        mux_2_to_1 hiMUX_Qprim_Qprim (
+          .data_in ( { Qprim[i], Qprim[i] } ),
+          .select ( selectQprimcorrection & ~selectQandQprimdif ),
+          .data_out ( lorightMUX[i] )
+        );
+          
+        // final choice
+        mux_2_to_1 loMUX_final (
+          .data_in ( { loleftMUX[i], lorightMUX[i] } ),
+          .select ( selectAandMsum & ~selectQandQprimdif & ~selectQprimcorrection ),
+          .data_out ( loMUX[i] )
+        );
         
       end
       
