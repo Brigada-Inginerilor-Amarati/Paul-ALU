@@ -1,7 +1,7 @@
 `timescale 1ns / 1ns
 
 module rgst #(
-    parameter width = 8
+    parameter width = 9
 ) (
     input wire clk,
     reset,
@@ -40,8 +40,13 @@ module rgst #(
                 );
             end else if (i == 1) begin
                 mux_4_to_1 mux_inst (  // left, right, sum/inbus, keep
-                    .data_in ({ ( left_shift_value & jump_LSb ) | ( data_out[i - 1] & ~jump_LSb ), data_out[i+1], data_in[i], data_out[i]}),
-                    .select  (selector_mux),
+                    .data_in({
+                        (left_shift_value & jump_LSb) | (data_out[i-1] & ~jump_LSb),
+                        data_out[i+1],
+                        data_in[i],
+                        data_out[i]
+                    }),
+                    .select(selector_mux),
                     .data_out(data_interm[i])
                 );
             end else begin
@@ -92,7 +97,7 @@ module rgst_tb;
         .data_out(data_out)
     );
 
-// problema la testarea right shift era ca RUNNING_CYCLES era prea mic => operatiile de right shift nu mai aveau loc
+    // problema la testarea right shift era ca RUNNING_CYCLES era prea mic => operatiile de right shift nu mai aveau loc
     localparam CLK_PERIOD = 100, RUNNING_CYCLES = 10;
     initial begin
         clk = 0;
@@ -119,15 +124,15 @@ module rgst_tb;
         // Wait for reset to be deasserted
         @(posedge reset);
         #10;
-        
+
         // written to be used in simulation interface, data seen as wave
-                
+
         // Enable load signals
         data_in = 8'b10110010;
         load_enable = 1;
         load = 1;
         #CLK_PERIOD;
-        
+
         // Disable load signals
         load_enable = 0;
         load = 0;
@@ -140,10 +145,10 @@ module rgst_tb;
         left_shift_value   = 0;  // insert 0 at the LSB during left shift
         right_shift_enable = 0;  // ensure right shift is off
         #CLK_PERIOD;  // first left shift cycle
-        
-        left_shift_value   = 1;  // insert 1 at the LSB during left shift
+
+        left_shift_value = 1;  // insert 1 at the LSB during left shift
         #CLK_PERIOD;  // second left shift cycle
-        
+
         left_shift_enable = 0;  // disable shifting
         // #CLK_PERIOD; // disabled to stress test module
 
@@ -154,12 +159,12 @@ module rgst_tb;
         right_shift_value = 1; // insert 1 at the MSB during right shift (simulating sign extension)
         left_shift_enable = 0;  // ensure left shift is off
         #CLK_PERIOD;  // first right shift cycle
-        
+
         right_shift_value = 0; // insert 0 at the MSB during right shift (simulating sign extension)
         #CLK_PERIOD;  // second right shift cycle
         right_shift_enable = 0;  // disable shifting
         // #CLK_PERIOD;
-        
+
         // $finish;
 
 
