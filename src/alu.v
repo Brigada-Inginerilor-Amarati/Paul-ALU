@@ -129,11 +129,11 @@ module alu (
     wire [8:0] A, Q, Qprim, M;
     wire [8:0] data_in_A, data_in_Q, data_in_Qprim, data_in_M;
     wire left_shift_enable, left_shift_value_Q, right_shift_enable, right_shift_value_A;
-    
+
     mux_2_to_1 MUX_RSHIFT_A (
-      .data_in ( { 1'b0, A[8] } ),
-	    .select ( decrement_Leading0s ),
-	    .data_out ( right_shift_value_A )
+        .data_in ({1'b0, A[8]}),
+        .select  (decrement_Leading0s),
+        .data_out(right_shift_value_A)
     );
 
     rgst reg_A (
@@ -144,15 +144,15 @@ module alu (
         .left_shift_value(Q[8]),
         .right_shift_enable(RSHIFT_signal | decrement_Leading0s),
         .right_shift_value(right_shift_value_A),
-        .jump_LSb ( 1'b0 ),
+        .jump_LSb(1'b0),
         .data_in(data_in_A),
         .data_out(A)
     );
-    
+
     mux_2_to_1 MUX_LSHIFT_Q (
-      .data_in ( { Q_value , 0 } ),
-	    .select ( LSHIFT_signal ),
-	    .data_out ( left_shift_value_Q )
+        .data_in ({Q_value, 1'b0}),
+        .select  (LSHIFT_signal),
+        .data_out(left_shift_value_Q)
     );
 
     rgst reg_Q (
@@ -163,12 +163,12 @@ module alu (
         .left_shift_value(Q_value),
         .right_shift_enable(RSHIFT_signal),
         .right_shift_value(A[0]),
-        .jump_LSb ( op_code[1] & op_code[0] ),
+        .jump_LSb(op_code[1] & op_code[0]),
         .data_in(data_in_Q),
         .data_out(Q)
     );
-    
-    assign data_in_Qprim = { adder_SUM, 1'b0 };
+
+    assign data_in_Qprim = {adder_SUM, 1'b0};
 
     rgst reg_Qprim (
         .clk(clk),
@@ -178,12 +178,12 @@ module alu (
         .left_shift_value(Qprim_value),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
-        .jump_LSb ( op_code[1] & op_code[0] ),
+        .jump_LSb(op_code[1] & op_code[0]),
         .data_in(data_in_Qprim),
         .data_out(Qprim)
     );
-    
-    assign data_in_M = { inbus[7] & ~( op_code[1] & op_code[0] ), inbus };
+
+    assign data_in_M = {inbus[7] & ~(op_code[1] & op_code[0]), inbus};
     assign sgn_bit_of_M = M[7];
 
     rgst reg_M (
@@ -194,7 +194,7 @@ module alu (
         .left_shift_value(1'b0),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
-        .jump_LSb ( 1'b0 ),
+        .jump_LSb(1'b0),
         .data_in(data_in_M),
         .data_out(M)
     );
@@ -202,58 +202,58 @@ module alu (
     //=========================================
     // MUXs FOR REGISTER DATA INPUTS
     //==========================================
-    
+
     genvar i;
-    
+
     generate
-      
-      for ( i = 0; i < 9; i = i + 1 ) begin
-        
-        // MUX for A register
-        if ( i < 8 ) // avg case, normal 8-bit data
-          mux_2_to_1 MUX_DATAIN_A (
-            .data_in ( { adder_SUM[i], inbus[i] } ),
-	          .select ( loadAregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
-          );
-        else // useful only for SRT-2 // and not even then
-          mux_2_to_1 MUX_DATAIN_A (
-            .data_in ( { adder_SUM[i], 1'b0 } ),
-	          .select ( loadAregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
-          );
-          
-        // MUX for Q register // must account for offset of 1 // mathematically, in Radix-4, there is Q[-1]
-                              // problem solved with jump_LSb in rgst module interface
-        if ( i == 0 ) // exceptional init case // for Radix-4
-          mux_2_to_1 MUX_DATAIN_Q (
-            .data_in ( { 1'b0, 1'b0 } ),
-	          .select ( loadQregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
-          );
-        else // avg case
-          mux_2_to_1 MUX_DATAIN_Q (
-            .data_in ( { adder_SUM[i - 1], inbus[i - 1] } ),
-	          .select ( loadQregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
-          );
-        
-      end
-      
+
+        for (i = 0; i < 9; i = i + 1) begin
+
+            // MUX for A register
+            if (i < 8)  // avg case, normal 8-bit data
+                mux_2_to_1 MUX_DATAIN_A (
+                    .data_in ({adder_SUM[i], inbus[i]}),
+                    .select  (loadAregisterfromADDER),
+                    .data_out(data_in_A[i])
+                );
+            else  // useful only for SRT-2 // and not even then
+                mux_2_to_1 MUX_DATAIN_A (
+                    .data_in ({adder_SUM[i], 1'b0}),
+                    .select  (loadAregisterfromADDER),
+                    .data_out(data_in_A[i])
+                );
+
+            // MUX for Q register // must account for offset of 1 // mathematically, in Radix-4, there is Q[-1]
+            // problem solved with jump_LSb in rgst module interface
+            if (i == 0)  // exceptional init case // for Radix-4
+                mux_2_to_1 MUX_DATAIN_Q (
+                    .data_in ({1'b0, 1'b0}),
+                    .select  (loadQregisterfromADDER),
+                    .data_out(data_in_A[i])
+                );
+            else  // avg case
+                mux_2_to_1 MUX_DATAIN_Q (
+                    .data_in ({adder_SUM[i-1], inbus[i-1]}),
+                    .select  (loadQregisterfromADDER),
+                    .data_out(data_in_A[i])
+                );
+
+        end
+
     endgenerate
 
     //=========================================
     // MUXs FOR ADDER DATA INPUTS
     //==========================================
-    
+
     generate
-      
-      for ( i = 0; i < 9; i = i + 1 ) begin
-        
-        
-        
-      end
-      
+
+        for (i = 0; i < 9; i = i + 1) begin
+
+
+
+        end
+
     endgenerate
 
     /*

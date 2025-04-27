@@ -10,7 +10,7 @@ module dff (
     output reg  data_out
 );
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk, posedge reset) begin
         if (reset) data_out <= 0;
         else if (load_enable) data_out <= data_in;
     end
@@ -30,7 +30,7 @@ module dff_rst_to_1 (
     output reg  data_out
 );
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk, posedge reset) begin
         if (reset) data_out <= 1;
         else if (load_enable) data_out <= data_in;
     end
