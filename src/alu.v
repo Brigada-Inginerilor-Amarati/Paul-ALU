@@ -5,7 +5,9 @@ module alu (
     input wire [1:0] op_code,
     input wire [7:0] inbus,
     output wire [7:0] outbus,
-    output wire END
+    output wire END,
+    output wire [16 : 0] act_state_debug,
+    output wire [16 : 0] next_state_debug
 );
 
     //=========================================
@@ -82,7 +84,9 @@ module alu (
         .write_to_Qs_enable(write_to_Qs_enable),
         .Q_value(Q_value),
         .Qprim_value(Qprim_value),
-        .END(END)
+        .END(END),
+        .act_state_debug(act_state_debug),
+        .next_state_debug(next_state_debug)
     );
 
     //=========================================

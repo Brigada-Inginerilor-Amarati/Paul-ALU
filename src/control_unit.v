@@ -36,7 +36,9 @@ module control_unit_one_hot (
     output wire write_to_Qs_enable,  // 1 if CU needs to write value to LSb of Q and Qprim registers
     output wire Q_value,  // value to be written in LSb of Q // for SRT-2
     output wire Qprim_value,  // value to be written in LSb of Qprim // for SRT-2
-    output wire END  // upper-case because of syntax
+    output wire END,  // upper-case because of syntax
+    output wire [16 : 0] act_state_debug,
+    output wire [16 : 0] next_state_debug
 );
 
     // localparam to easily acces number of states
