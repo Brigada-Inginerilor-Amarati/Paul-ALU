@@ -233,13 +233,13 @@ module alu (
           mux_2_to_1 MUX_DATAIN_Q (
             .data_in ( { 1'b0, 1'b0 } ),
 	          .select ( loadQregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
+	          .data_out ( data_in_Q[i] )
           );
         else // avg case
           mux_2_to_1 MUX_DATAIN_Q (
             .data_in ( { adder_SUM[i - 1], inbus[i - 1] } ),
 	          .select ( loadQregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
+	          .data_out ( data_in_Q[i] )
           );
         
       end
