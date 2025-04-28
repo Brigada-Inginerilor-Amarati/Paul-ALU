@@ -181,7 +181,7 @@ module alu (
         .data_out(Q)
     );
     
-    assign data_in_Qprim = { adder_SUM, 1'b0 };
+    assign data_in_Qprim = { adder_SUM[7 : 0], 1'b0 };
 
     rgst reg_Qprim (
         .clk(clk),
@@ -285,11 +285,17 @@ module alu (
         // right side
         if ( i == 0 ) // for LSb of 1
           mux_2_to_1 hiMUX_1_Q (
-            .data_in ( { 1'b1, Q[i] } ),
+            .data_in ( { 1'b1, Q[i + 1] } ), // all Qs and Qprims to be modified to account for Q[-1] anomaly
             .select ( selectQprimcorrection & ~selectQandQprimdif ),
             .data_out ( hirightMUX[i] )
           );
-        else
+        else if ( i < 8 )
+          mux_2_to_1 hiMUX_1_Q (
+            .data_in ( { 1'b0, Q[i + 1] } ),
+            .select ( selectQprimcorrection & ~selectQandQprimdif ),
+            .data_out ( hirightMUX[i] )
+          );
+        else 
           mux_2_to_1 hiMUX_1_Q (
             .data_in ( { 1'b0, Q[i] } ),
             .select ( selectQprimcorrection & ~selectQandQprimdif ),
@@ -321,11 +327,18 @@ module alu (
           );
           
         // right side
-        mux_2_to_1 hiMUX_Qprim_Qprim (
-          .data_in ( { Qprim[i], Qprim[i] } ),
-          .select ( selectQprimcorrection & ~selectQandQprimdif ),
-          .data_out ( lorightMUX[i] )
-        );
+        if ( i < 8 )
+          mux_2_to_1 hiMUX_Qprim_Qprim (
+            .data_in ( { Qprim[i + 1], Qprim[i + 1] } ),
+            .select ( selectQprimcorrection & ~selectQandQprimdif ),
+            .data_out ( lorightMUX[i] )
+          );
+        else
+          mux_2_to_1 hiMUX_Qprim_Qprim (
+            .data_in ( { Qprim[i], Qprim[i] } ),
+            .select ( selectQprimcorrection & ~selectQandQprimdif ),
+            .data_out ( lorightMUX[i] )
+          );
           
         // final choice
         mux_2_to_1 loMUX_final (

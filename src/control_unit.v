@@ -168,10 +168,10 @@ module control_unit_one_hot (
         | (op_code[1] & op_code[0] & act_state[PUSHA]);  // for div operation ending
 
     // loading input states
-    assign next_state[LOADA] = reset & BEGIN & ( ( ~op_code[1] ) | ( op_code[1] & op_code[0] ) ); // for add, sub, div
-    assign next_state[LOADQ] = reset & ((BEGIN & (op_code[1] & ~op_code[0]))  // for mul
+    assign next_state[LOADA] = ~BEGIN & reset & BEGIN & ( ( ~op_code[1] ) | ( op_code[1] & op_code[0] ) ); // for add, sub, div
+    assign next_state[LOADQ] = ~BEGIN & reset & ((BEGIN & (op_code[1] & ~op_code[0]))  // for mul
         | (act_state[LOADA] & op_code[1] & op_code[0]));  // for div
-    assign next_state[LOADM] = reset & ((act_state[LOADA] & ~op_code[1])  // for add, sub
+    assign next_state[LOADM] = ~BEGIN & reset & ((act_state[LOADA] & ~op_code[1])  // for add, sub
         | act_state[LOADQ]);  // for for mul, div
 
     // following states expressions need to be completed depending on signals, flag, decisions
@@ -179,15 +179,15 @@ module control_unit_one_hot (
     // decision_based_on_correction_other needs to be split between decision_based_on_SRT2_counter and ~decision_based_on_MSb_of_A
 
     // states using the adder
-    assign next_state[ADDMtoA] = reset & ((act_state[LOADM] & ~op_code[1])  // for add, sub
+    assign next_state[ADDMtoA] = ~BEGIN & reset & ((act_state[LOADM] & ~op_code[1])  // for add, sub
         | (act_state[LOADM] & op_code[1] & ~op_code[0] & decision_on_bits_of_Q)  // for mul
         | (act_state[COUNTRSHIFTs] & decision_on_bits_of_Q)
         // for div // only from LSHIFT state with decision on ( flag ) leading bits of A
         | (act_state[LSHIFT] & decision_on_flag_bits_of_A));
-    assign next_state[ADDMtoACORRECTION] = reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction ) // only for div correction // correction needs to be decided on SRT-2 counter and MSb of A
+    assign next_state[ADDMtoACORRECTION] = ~BEGIN & reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction ) // only for div correction // correction needs to be decided on SRT-2 counter and MSb of A
         | ( act_state[LSHIFT] & ~decision_on_flag_bits_of_A & decision_based_on_correction ) ); // skip ADDMtoA from LSHIFT
-    assign next_state[ADD1toQprim] = reset & ( ( act_state[ADDMtoACORRECTION] ) ); // to complete SRT-2 correction
-    assign next_state[ADDminQprimtoQ] = reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction_other ) // to find real value of Q register in SRT-2 algorithm
+    assign next_state[ADD1toQprim] = ~BEGIN & reset & ( ( act_state[ADDMtoACORRECTION] ) ); // to complete SRT-2 correction
+    assign next_state[ADDminQprimtoQ] = ~BEGIN & reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction_other ) // to find real value of Q register in SRT-2 algorithm
         | ( act_state[LSHIFT] & decision_based_on_correction_other )
                                        | ( act_state[ADD1toQprim] ) ); // if correction was applied
 
