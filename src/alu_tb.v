@@ -103,11 +103,33 @@ module alu_tb;
         inbus = 8'd89;
         expected = opA - inbus;
         wait (END);
+        #10;
         /*
         if (outbus != expected)
             $error("SUB FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expected);
         else $display("SUB OK: %0d + %0d = %0d", opA, inbus, outbus);
         */
+        
+        // Multiplication test
+        BEGIN   = 1'b1;
+        op_code = 2'b10;
+        #10 inbus = 8'd56;
+        opA = inbus;
+        #10 BEGIN = 1'b0;
+        inbus = 8'd89;
+        expected = opA - inbus;
+        wait (END);
+        #10;
+        
+        // Division test
+        BEGIN   = 1'b1;
+        op_code = 2'b11;
+        #10 inbus = 8'd56;
+        opA = inbus;
+        #10 BEGIN = 1'b0;
+        inbus = 8'd89;
+        expected = opA - inbus;
+        wait (END);
           
         #10 $stop;
 
