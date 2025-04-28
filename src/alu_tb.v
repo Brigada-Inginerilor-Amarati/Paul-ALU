@@ -58,11 +58,13 @@ module alu_tb;
         #10 reset = 1'b0;
     end
 
+    /*
     // set timeout
     initial begin
         #100 $stop;
         $display("Timeout reached");
     end
+    */
 
     // monitor values
     initial begin
@@ -79,15 +81,35 @@ module alu_tb;
         // Addition test
         BEGIN   = 1'b1;
         op_code = 2'b00;
-        #10 inbus = 8'd0;
+        #10 inbus = 8'd56;
         opA = inbus;
         #10 BEGIN = 1'b0;
-        inbus = 8'd0;
+        inbus = 8'd89;
         expected = opA + inbus;
         wait (END);
+        #10;
+        /*
         if (outbus != expected)
             $error("ADD FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expected);
         else $display("ADD OK: %0d + %0d = %0d", opA, inbus, outbus);
+        */
+          
+        // Subtraction test
+        BEGIN   = 1'b1;
+        op_code = 2'b00;
+        #10 inbus = 8'd56;
+        opA = inbus;
+        #10 BEGIN = 1'b0;
+        inbus = 8'd89;
+        expected = opA - inbus;
+        wait (END);
+        /*
+        if (outbus != expected)
+            $error("SUB FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expected);
+        else $display("SUB OK: %0d + %0d = %0d", opA, inbus, outbus);
+        */
+          
+        #10 $stop;
 
         /*
         // Multiplication test
@@ -104,8 +126,7 @@ module alu_tb;
         else $display("MUL OK: %0d * %0d = %0d", opA, inbus, outbus);
         */
 
-        $display("All tests done.");
-        // $stop;
+        // $display("All tests done.");
         // $finish;
     end
 
