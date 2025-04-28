@@ -335,7 +335,7 @@ module alu (
     
     generate
       
-      for ( i = 0; i < 9; i = i + 1 ) begin
+      for ( i = 0; i < 8; i = i + 1 ) begin
         
         // tri-state driver output can be added for fun, right now we need to make it work
         

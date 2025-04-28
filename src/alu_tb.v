@@ -23,8 +23,8 @@ module alu_tb;
     reg  [7:0] opA;  // holds the first operand
     reg  [7:0] expected;  // holds the expected result
     
-    reg [16 : 0] act_state_debug;
-    reg [16 : 0] next_state_debug;
+    wire [16 : 0] act_state_debug;
+    wire [16 : 0] next_state_debug;
     
 
     alu dut (
@@ -54,13 +54,13 @@ module alu_tb;
 
     // set timeout
     initial begin
-        // #100 $finish;
-        // $display("Timeout reached");
+        #100 $stop;
+        $display("Timeout reached");
     end
 
     // monitor values
     initial begin
-        $monitor("clk: %b, reset: %b, BEGIN: %b, op_code: %b\n inbus: %b, outbus: %b, END: %b\n act_state: %u, next_state: %u",
+        $monitor("clk: %b, reset: %b, BEGIN: %b, op_code: %b\n inbus: %b, outbus: %b, END: %b\n act_state: %h, next_state: %h",
                  clk, reset, BEGIN, op_code, inbus, outbus, END, act_state_debug, next_state_debug);
     end
 
@@ -99,6 +99,7 @@ module alu_tb;
         */
 
         $display("All tests done.");
+        // $stop;
         // $finish;
     end
 

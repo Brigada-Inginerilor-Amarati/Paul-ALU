@@ -1,7 +1,7 @@
 // rework on FSM, one-hot style
 
 module control_unit_one_hot (
-    input wire reset,  // sets state to IDLE // active on 0
+    input wire reset_input,  // sets state to IDLE // active on 1
     clk,
     BEGIN,  // upper-case because of syntax
     input wire [1 : 0] op_code,  // operation code // 00 - add, 01- sub, 10 - mul, 11 - div
@@ -41,6 +41,9 @@ module control_unit_one_hot (
     output wire [16 : 0] next_state_debug
 );
 
+    wire reset; // due to big mishaps // acts like active on 0
+    assign reset = ~reset_input;
+
     // localparam to easily acces number of states
 
     localparam number_of_states = 17;
@@ -76,11 +79,14 @@ module control_unit_one_hot (
     // stari SRT-2 care tin cont de leading 0s for divisor
     // starile de corectie sunt reprezentate prin a tine cont de operatie si un registru suplimentar ca flag
     localparam LSHIFTfor0 = COUNTLSHIFTs + 1;  // eliminare leading 0s from divisor
-    localparam RSHIFTfor0 = COUNTRSHIFTs + 1;  // corectie in functie de leading 0s from divisor
+    localparam RSHIFTfor0 = LSHIFTfor0 + 1;  // corectie in functie de leading 0s from divisor
 
     // wires for actual and next state
     wire [number_of_states - 1 : 0] act_state;
     wire [number_of_states - 1 : 0] next_state;
+    
+    assign act_state_debug = act_state;
+    assign next_state_debug = next_state;
 
     // decisional data
 
@@ -155,7 +161,7 @@ module control_unit_one_hot (
     // can be optimised and factorised, right now written for clarity from FSM "schmematic"
 
     // endings are considered graceful endings here
-    assign next_state[IDLE] = ~reset  // when HW is reset
+    assign next_state[IDLE] = reset  // when HW is reset
         | (act_state[IDLE] & ~BEGIN)  // waiting for BEGIN signal
         | (~op_code[1] & act_state[PUSHA])  // for add and sub operations ending
         | (op_code[1] & ~op_code[0] & act_state[PUSHQ])  // for mul operation ending
@@ -195,6 +201,7 @@ module control_unit_one_hot (
 
     // states for Radix-4 right shifting // specific only for mul
     assign next_state[RSHIFT] = reset & ((act_state[ADDMtoA] & op_code[1] & ~op_code[0]));
+    assign next_state[RSHIFT_DOUBLE] = reset & ( act_state[RSHIFT] );
     assign next_state[COUNTRSHIFTs] = reset & ( (act_state[RSHIFT] & ~decision_based_on_Radix4_counter) );
 
     // states for SRT-2 left shifting // result calculation Lshifts // general-case
