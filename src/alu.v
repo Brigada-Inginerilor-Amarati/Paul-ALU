@@ -7,7 +7,10 @@ module alu (
     output wire [7:0] outbus,
     output wire END,
     output wire [16 : 0] act_state_debug,
-    output wire [16 : 0] next_state_debug
+    output wire [16 : 0] next_state_debug,
+    output wire [8 : 0] A_reg_debug,
+    output wire [8 : 0] Q_reg_debug,
+    output wire [8 : 0] M_reg_debug
 );
 
     //=========================================
@@ -133,6 +136,12 @@ module alu (
     wire [8:0] A, Q, Qprim, M;
     wire [8:0] data_in_A, data_in_Q, data_in_Qprim, data_in_M;
     wire left_shift_enable, left_shift_value_Q, right_shift_enable, right_shift_value_A;
+    
+    // debug purposesr
+
+    assign A_reg_debug = A;
+    assign Q_reg_debug = Q;
+    assign M_reg_debug = M;
     
     mux_2_to_1 MUX_RSHIFT_A (
       .data_in ( { 1'b0, A[8] } ),

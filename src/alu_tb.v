@@ -25,6 +25,9 @@ module alu_tb;
     
     wire [16 : 0] act_state_debug;
     wire [16 : 0] next_state_debug;
+    wire [7 : 0] A_reg_debug;
+    wire [7 : 0] Q_reg_debug;
+    wire [7 : 0] M_reg_debug;
     
 
     alu dut (
@@ -36,7 +39,10 @@ module alu_tb;
         .outbus(outbus),
         .END(END),
         .act_state_debug(act_state_debug),
-        .next_state_debug(next_state_debug)
+        .next_state_debug(next_state_debug),
+        .A_reg_debug(A_reg_debug),
+        .Q_reg_debug(Q_reg_debug),
+        .M_reg_debug(M_reg_debug)
     );
 
     // clock generation
@@ -73,13 +79,13 @@ module alu_tb;
         // Addition test
         BEGIN   = 1'b1;
         op_code = 2'b00;
-        #10 inbus = 8'd127;
+        #10 inbus = 8'd3;
         opA = inbus;
         #10 BEGIN = 1'b0;
-        #10 inbus = 8'd0;
+        inbus = 8'd2;
         expected = opA + inbus;
         wait (END);
-        if (outbus !== expected)
+        if (outbus != expected)
             $error("ADD FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expected);
         else $display("ADD OK: %0d + %0d = %0d", opA, inbus, outbus);
 

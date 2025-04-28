@@ -17,7 +17,7 @@ module adder_rca_tb;
     $monitor("x = %d, y = %d, carry_in = %d => sum = %d, carry_out = %d", x, y, carry_in, sum, carry_out);
     
     // Test addition
-    x = 9'b000000011; y = 9'b000000010; carry_in = 0; #10;
+    x = 9'b000000011; y = 9'b000000010u; carry_in = 0; #10;
     x = 9'b000000001; y = 9'b000000001; carry_in = 0; #10;
     x = 9'b000000101; y = 9'b000000011; carry_in = 0; #10;
     x = 9'b111111111; y = 9'b000000001; carry_in = 0; #10;
