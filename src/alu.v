@@ -50,7 +50,7 @@ module alu (
 
     control_unit_one_hot cu (
         .clk(clk),
-        .reset(reset),
+        .reset_input(reset),
         .BEGIN(BEGIN),
         .op_code(op_code),
         .bits_of_Q(bits_of_Q),
@@ -341,7 +341,7 @@ module alu (
         
         
         mux_2_to_1 MUX_OUTBUS (
-          .data_in ( { A[i], Q[i] } ),
+          .data_in ( { A[i], Q[i + 1] } ),
           .select ( pushAregister & ~pushQregister ),
           .data_out ( outbus[i] )
         );

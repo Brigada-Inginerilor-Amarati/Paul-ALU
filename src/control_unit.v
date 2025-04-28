@@ -1,7 +1,7 @@
 // rework on FSM, one-hot style
 
 module control_unit_one_hot (
-    input wire reset_input,  // sets state to IDLE // active on 1
+    input wire reset_input,  // sets state to IDLE // active on 1 // inside module active on 0 // check reset wire
     clk,
     BEGIN,  // upper-case because of syntax
     input wire [1 : 0] op_code,  // operation code // 00 - add, 01- sub, 10 - mul, 11 - div
@@ -138,7 +138,7 @@ module control_unit_one_hot (
             if (i == IDLE)  // flip flop-ul specific IDLE primeste un jumpstart
                 dff_rst_to_1 dff_rst_to_1_inst (
                     .clk(clk),
-                    .reset(reset),
+                    .reset(~reset),
                     .load_enable(1'b1),
                     .data_in(next_state[i]),
                     .data_out(act_state[i])
@@ -146,7 +146,7 @@ module control_unit_one_hot (
             else  // flip flop pentru fiecare stare
                 dff dff_inst (
                     .clk(clk),
-                    .reset(reset),
+                    .reset(~reset),
                     .load_enable(1'b1),
                     .data_in(next_state[i]),
                     .data_out(act_state[i])
@@ -161,7 +161,7 @@ module control_unit_one_hot (
     // can be optimised and factorised, right now written for clarity from FSM "schmematic"
 
     // endings are considered graceful endings here
-    assign next_state[IDLE] = reset  // when HW is reset
+    assign next_state[IDLE] = ~reset  // when HW is reset
         | (act_state[IDLE] & ~BEGIN)  // waiting for BEGIN signal
         | (~op_code[1] & act_state[PUSHA])  // for add and sub operations ending
         | (op_code[1] & ~op_code[0] & act_state[PUSHQ])  // for mul operation ending
