@@ -234,7 +234,8 @@ module control_unit_one_hot (
 
     // init registers
     assign initAregisterto0 = next_state[LOADQ] & op_code[1] & ~op_code[0];
-    assign initQandQprimregisters = next_state[LOADM];
+    // assign initQandQprimregisters = next_state[LOADM];
+    assign initQandQprimregisters = reset_input;
     assign initCounters = next_state[LOADM];
 
     // control leading 0s
