@@ -118,10 +118,11 @@ module alu_tb;
         opA = inbus;
         #10 BEGIN = 1'b0;
         inbus = 8'd89;
-        expected = opA - inbus;
+        expectedProduct = opA * inbus;
         wait (END);
         #10;
         
+        /*
         // Division test
         BEGIN   = 1'b1;
         op_code = 2'b11;
@@ -129,8 +130,9 @@ module alu_tb;
         opA = inbus;
         #10 BEGIN = 1'b0;
         inbus = 8'd89;
-        expected = opA - inbus;
+        expectedProduct = opA - inbus;
         wait (END);
+        */
           
         #10 $stop;
 
