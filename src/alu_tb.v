@@ -79,10 +79,10 @@ module alu_tb;
         // Addition test
         BEGIN   = 1'b1;
         op_code = 2'b00;
-        #10 inbus = 8'd3;
+        #10 inbus = 8'd0;
         opA = inbus;
         #10 BEGIN = 1'b0;
-        inbus = 8'd2;
+        inbus = 8'd0;
         expected = opA + inbus;
         wait (END);
         if (outbus != expected)
