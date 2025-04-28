@@ -25,9 +25,9 @@ module alu_tb;
     
     wire [16 : 0] act_state_debug;
     wire [16 : 0] next_state_debug;
-    wire [7 : 0] A_reg_debug;
-    wire [7 : 0] Q_reg_debug;
-    wire [7 : 0] M_reg_debug;
+    wire [8 : 0] A_reg_debug;
+    wire [8 : 0] Q_reg_debug;
+    wire [8 : 0] M_reg_debug;
     
 
     alu dut (
@@ -96,7 +96,7 @@ module alu_tb;
           
         // Subtraction test
         BEGIN   = 1'b1;
-        op_code = 2'b00;
+        op_code = 2'b01;
         #10 inbus = 8'd56;
         opA = inbus;
         #10 BEGIN = 1'b0;

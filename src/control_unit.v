@@ -271,7 +271,7 @@ module control_unit_one_hot (
     assign select_sum_or_dif = selectQandQprimdif
                              | ( selectAandMsum
                                & (
-                                    ( ~op_code[0] & op_code[1] ) // for dif
+                                    ( ~op_code[1] & op_code[0] ) // for dif
         | (op_code[1] & ~op_code[0] & bits_of_Q[2])  // for mul
         | (op_code[1] & op_code[0] & ~bits_of_A[2])  // for div
         ));
