@@ -168,10 +168,10 @@ module control_unit_one_hot (
         | (op_code[1] & op_code[0] & act_state[PUSHA]);  // for div operation ending
 
     // loading input states
-    assign next_state[LOADA] = ~BEGIN & reset & BEGIN & ( ( ~op_code[1] ) | ( op_code[1] & op_code[0] ) ); // for add, sub, div
-    assign next_state[LOADQ] = ~BEGIN & reset & ((BEGIN & (op_code[1] & ~op_code[0]))  // for mul
+    assign next_state[LOADA] = reset & act_state[IDLE] & BEGIN & ( ( ~op_code[1] ) | ( op_code[1] & op_code[0] ) ); // for add, sub, div
+    assign next_state[LOADQ] = reset & ((BEGIN & act_state[IDLE] & (op_code[1] & ~op_code[0]))  // for mul
         | (act_state[LOADA] & op_code[1] & op_code[0]));  // for div
-    assign next_state[LOADM] = ~BEGIN & reset & ((act_state[LOADA] & ~op_code[1])  // for add, sub
+    assign next_state[LOADM] = reset & ((act_state[LOADA] & ~op_code[1])  // for add, sub
         | act_state[LOADQ]);  // for for mul, div
 
     // following states expressions need to be completed depending on signals, flag, decisions
@@ -192,31 +192,31 @@ module control_unit_one_hot (
                                        | ( act_state[ADD1toQprim] ) ); // if correction was applied
 
     // states for OUTBUS loading
-    assign next_state[PUSHA] = reset & ((act_state[ADDMtoA] & ~op_code[1])  // for add, sub
+    assign next_state[PUSHA] = ~BEGIN & reset & ((act_state[ADDMtoA] & ~op_code[1])  // for add, sub
         | (act_state[RSHIFT] & decision_based_on_Radix4_counter)  // for mul
         | (act_state[PUSHQ] & op_code[1] & op_code[0]));  // for div
-    assign next_state[PUSHQ] = reset & ((act_state[PUSHA] & op_code[1] & ~op_code[0])  // for mul
+    assign next_state[PUSHQ] = ~BEGIN & reset & ((act_state[PUSHA] & op_code[1] & ~op_code[0])  // for mul
         | (act_state[ADDminQprimtoQ] & decision_based_on_Leading0s_counter)  // for div
         | (act_state[RSHIFTfor0] & decision_based_on_Leading0s_counter));
 
     // states for Radix-4 right shifting // specific only for mul
-    assign next_state[RSHIFT] = reset & ((act_state[ADDMtoA] & op_code[1] & ~op_code[0]));
-    assign next_state[RSHIFT_DOUBLE] = reset & ( act_state[RSHIFT] );
-    assign next_state[COUNTRSHIFTs] = reset & ( (act_state[RSHIFT] & ~decision_based_on_Radix4_counter) );
+    assign next_state[RSHIFT] = ~BEGIN & reset & ((act_state[ADDMtoA] & op_code[1] & ~op_code[0]));
+    assign next_state[RSHIFT_DOUBLE] = ~BEGIN & reset & ( act_state[RSHIFT] );
+    assign next_state[COUNTRSHIFTs] = ~BEGIN & reset & ( (act_state[RSHIFT] & ~decision_based_on_Radix4_counter) );
 
     // states for SRT-2 left shifting // result calculation Lshifts // general-case
-    assign next_state[LSHIFT] = reset & ( ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s ) // also need to update the flags for ADDMtoA next_next_state
+    assign next_state[LSHIFT] = ~BEGIN & reset & ( ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s ) // also need to update the flags for ADDMtoA next_next_state
         | (act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s));
-    assign next_state[COUNTLSHIFTs] = reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_SRT2_counter )
+    assign next_state[COUNTLSHIFTs] = ~BEGIN & reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_SRT2_counter )
                                   | ( act_state[LSHIFT] & ~decision_on_flag_bits_of_A & decision_based_on_SRT2_counter ) );
 
     // states for SRT-2 operand formatting
-    assign next_state[LSHIFTfor0] = reset
+    assign next_state[LSHIFTfor0] = ~BEGIN & reset
                                   & (
                                       ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s )
                                       | ( act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s )
                                   );
-    assign next_state[RSHIFTfor0] = reset
+    assign next_state[RSHIFTfor0] = ~BEGIN & reset
                                   & (
                                       ( act_state[ADDminQprimtoQ] & ~decision_based_on_Leading0s_counter )
                                       | ( act_state[RSHIFTfor0] & ~decision_based_on_Leading0s_counter )
