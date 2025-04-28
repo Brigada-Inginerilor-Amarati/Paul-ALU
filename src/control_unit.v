@@ -155,13 +155,17 @@ module control_unit_one_hot (
         end
 
     endgenerate
+    
+    wire left_in_neutral_state;
+    assign left_in_neutral_state = ( act_state == 0 );
 
     // assigning all next states
 
     // can be optimised and factorised, right now written for clarity from FSM "schmematic"
 
     // endings are considered graceful endings here
-    assign next_state[IDLE] = ~reset  // when HW is reset
+    assign next_state[IDLE] = left_in_neutral_state
+        | ~reset  // when HW is reset
         | (act_state[IDLE] & ~BEGIN)  // waiting for BEGIN signal
         | (~op_code[1] & act_state[PUSHA])  // for add and sub operations ending
         | (op_code[1] & ~op_code[0] & act_state[PUSHQ])  // for mul operation ending
