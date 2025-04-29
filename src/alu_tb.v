@@ -162,6 +162,22 @@ module alu_tb;
         expectedRemainder = opA - ( inbus * expectedQuotient );
         wait (END);
         #10;
+        
+        // Division by 0 test
+        
+        reset = 1'b1;
+        #10;
+        BEGIN   = 1'b1;
+        op_code = 2'b11;
+        reset = ~reset;
+        inbus = 8'b00010010;
+        opA = inbus;
+        #10 BEGIN = 1'b0;
+        inbus = 8'b01111011;
+        opA = ( opA << 8 ) + inbus;
+        #10 inbus = 8'b00000000;
+        wait (END);
+        #10;
           
         #10 $stop;
 

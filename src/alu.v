@@ -49,6 +49,7 @@ module alu (
     wire write_to_Qs_enable;
     wire Q_value;
     wire Qprim_value;
+    wire M_is_0;
 
     wire [2:0] op_counter_bits;
     wire [2:0] leading_zeros_counter_bits;
@@ -91,7 +92,8 @@ module alu (
         .Qprim_value(Qprim_value),
         .END(END),
         .act_state_debug(act_state_debug),
-        .next_state_debug(next_state_debug)
+        .next_state_debug(next_state_debug),
+        .M_is_0 ( M_is_0 )
     );
 
     //=========================================
@@ -212,6 +214,8 @@ module alu (
     
     assign data_in_M = { inbus[7] & ~( op_code[1] & op_code[0] ), inbus };
     assign sgn_bit_of_M = M[7];
+    
+    assign M_is_0 = ~M[8] & ~M[7] & ~M[6] & ~M[5] & ~M[4] & ~M[3] & ~M[2] & ~M[1] & ~M[0];
 
     rgst reg_M (
         .clk(clk),

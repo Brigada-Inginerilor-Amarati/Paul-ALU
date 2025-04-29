@@ -11,6 +11,7 @@ module control_unit_one_hot (
     input wire countSRT2full,  // wire if Counter for SRT-2 is full // value is 7
     input wire countRadix4full,  // similar wire, for Radix-4 // value is 3
     input wire countLeading0sempty,  // similar wire, for SRT-2 Leading0s // value is 0
+    input wire M_is_0,
     output wire loadAregister_from_INBUS,
     loadQregister_from_INBUS,
     loadMregister_from_INBUS,  // load A/Q/M register from INBUS
@@ -170,7 +171,8 @@ module control_unit_one_hot (
     // can be optimised and factorised, right now written for clarity from FSM "schmematic"
 
     // endings are considered graceful endings here
-    assign next_state[IDLE] = left_in_neutral_state | ~reset  // when HW is reset
+    assign next_state[IDLE] = END
+        | left_in_neutral_state | ~reset  // when HW is reset
         | (act_state[IDLE] & ~BEGIN)  // waiting for BEGIN signal
         | (~op_code[1] & act_state[PUSHA])  // for add and sub operations ending
         | (op_code[1] & ~op_code[0] & act_state[PUSHQ])  // for mul operation ending
@@ -256,7 +258,8 @@ module control_unit_one_hot (
     // assigning all output signals // control signals for HW architecture
 
     // external signal
-    assign END = next_state[IDLE] & ~act_state[IDLE] & reset; // when changing state to IDLE and program was not already in IDLE and HW was not reset
+    assign END = ( M_is_0 & ~act_state[IDLE] & ~act_state[LOADA] & ~act_state[LOADQ] & ~act_state[LOADM] )
+               | ( next_state[IDLE] & ~act_state[IDLE] & reset ); // when changing state to IDLE and program was not already in IDLE and HW was not reset
 
     // load registers from INBUS
     assign loadAregister_from_INBUS = next_state[LOADA];
