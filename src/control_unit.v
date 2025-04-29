@@ -193,8 +193,11 @@ module control_unit_one_hot (
         | (act_state[COUNTRSHIFTs] & decision_on_bits_of_Q)
         // for div // only from LSHIFT state with decision on ( flag ) leading bits of A
         | (act_state[LSHIFT] & ~decision_on_flag_bits_of_A));
-    assign next_state[ADDMtoACORRECTION] = ~BEGIN & reset & ( ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction ) // only for div correction // correction needs to be decided on SRT-2 counter and MSb of A
-        | ( act_state[LSHIFT] & ~decision_on_flag_bits_of_A & decision_based_on_correction ) ); // skip ADDMtoA from LSHIFT
+    assign next_state[ADDMtoACORRECTION] = ~BEGIN & reset
+                                         & (
+                                              ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction ) // only for div correction // correction needs to be decided on SRT-2 counter and MSb of A
+                                              | ( act_state[LSHIFT] & decision_on_flag_bits_of_A & decision_based_on_correction ) // skip ADDMtoA from LSHIFT
+                                            );
     assign next_state[ADD1toQprim] = ~BEGIN & reset & ( ( act_state[ADDMtoACORRECTION] ) ); // to complete SRT-2 correction
     assign next_state[ADDminQprimtoQ] = ~BEGIN & reset
                                       & (

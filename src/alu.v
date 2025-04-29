@@ -183,8 +183,8 @@ module alu (
     rgst reg_Q (
         .clk(clk),
         .reset(reset | initQandQprimregisters),
-        .load_enable(loadQregister_from_INBUS | loadQregisterfromADDER),
-        .left_shift_enable(LSHIFT_signal | increment_Leading0s | write_to_Qs_enable),
+        .load_enable(loadQregister_from_INBUS | loadQregisterfromADDER | write_to_Qs_enable),
+        .left_shift_enable(LSHIFT_signal | increment_Leading0s),
         .left_shift_value(left_shift_value_Q),
         .right_shift_enable(RSHIFT_signal),
         .right_shift_value(A[0]),
@@ -198,8 +198,8 @@ module alu (
     rgst reg_Qprim (
         .clk(clk),
         .reset(reset | initQandQprimregisters),
-        .load_enable(loadQprimregisterfromADDER),
-        .left_shift_enable(LSHIFT_signal | write_to_Qs_enable),
+        .load_enable(loadQprimregisterfromADDER | write_to_Qs_enable),
+        .left_shift_enable(LSHIFT_signal),
         .left_shift_value(Qprim_value),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
