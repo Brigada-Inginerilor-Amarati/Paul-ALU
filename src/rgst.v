@@ -21,7 +21,7 @@ module rgst #(
 
     generate
         wire [width - 1 : 0] data_interm;
-        for (i = 0; i < width; i = i + 1) begin  
+        for (i = 0; i < width; i = i + 1) begin
 
             if (0 < i && i < width - 1) begin
                 mux_4_to_1 mux_inst (  // left, right, sum/inbus, keep
