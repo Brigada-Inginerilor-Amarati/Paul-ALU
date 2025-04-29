@@ -10,7 +10,9 @@ module alu (
     output wire [16 : 0] next_state_debug,
     output wire [8 : 0] A_reg_debug,
     output wire [8 : 0] Q_reg_debug,
-    output wire [8 : 0] M_reg_debug
+    output wire [8 : 0] M_reg_debug,
+    output wire [8 : 0] Qprim_reg_debug,
+    output wire [2 : 0] SRT2counter_debug
 );
 
     //=========================================
@@ -103,6 +105,9 @@ module alu (
         .count_down(1'b0),
         .cnt(op_counter_bits)
     );
+    
+    assign countRadix4full = op_counter_bits[1] & op_counter_bits[0];
+    assign countSRT2full = op_counter_bits[2] & op_counter_bits[1] & op_counter_bits[0];
 
     counter leading_zeros_counter (
         .clk(clk),
@@ -112,8 +117,9 @@ module alu (
         .cnt(leading_zeros_counter_bits)
     );
     
-    assign countRadix4full = op_counter_bits[1] & op_counter_bits[0];
-    assign countSRT2full = op_counter_bits[2] & op_counter_bits[1] & op_counter_bits[0];
+    assign countLeading0sempty = ~leading_zeros_counter_bits[1] & ~leading_zeros_counter_bits[0];
+    
+    assign SRT2counter_debug = op_counter_bits;
 
     //=========================================
     // RCA ADDER
@@ -177,9 +183,9 @@ module alu (
     rgst reg_Q (
         .clk(clk),
         .reset(reset | initQandQprimregisters),
-        .load_enable(loadQregister_from_INBUS | loadQregisterfromADDER | write_to_Qs_enable),
-        .left_shift_enable(LSHIFT_signal | increment_Leading0s),
-        .left_shift_value(Q_value),
+        .load_enable(loadQregister_from_INBUS | loadQregisterfromADDER),
+        .left_shift_enable(LSHIFT_signal | increment_Leading0s | write_to_Qs_enable),
+        .left_shift_value(left_shift_value_Q),
         .right_shift_enable(RSHIFT_signal),
         .right_shift_value(A[0]),
         .jump_LSb ( op_code[1] & op_code[0] ),
@@ -192,8 +198,8 @@ module alu (
     rgst reg_Qprim (
         .clk(clk),
         .reset(reset | initQandQprimregisters),
-        .load_enable(loadQprimregisterfromADDER | write_to_Qs_enable),
-        .left_shift_enable(LSHIFT_signal),
+        .load_enable(loadQprimregisterfromADDER),
+        .left_shift_enable(LSHIFT_signal | write_to_Qs_enable),
         .left_shift_value(Qprim_value),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
@@ -202,6 +208,8 @@ module alu (
         .data_out(Qprim)
     );
     
+    assign Qprim_reg_debug = Qprim;
+    
     assign data_in_M = { inbus[7] & ~( op_code[1] & op_code[0] ), inbus };
     assign sgn_bit_of_M = M[7];
 
@@ -209,7 +217,7 @@ module alu (
         .clk(clk),
         .reset(reset),
         .load_enable(loadMregister_from_INBUS),
-        .left_shift_enable(LSHIFT_signal | increment_Leading0s),
+        .left_shift_enable(increment_Leading0s),
         .left_shift_value(1'b0),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),

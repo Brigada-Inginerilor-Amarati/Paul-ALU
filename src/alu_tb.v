@@ -31,6 +31,8 @@ module alu_tb;
     wire [8 : 0] A_reg_debug;
     wire [8 : 0] Q_reg_debug;
     wire [8 : 0] M_reg_debug;
+    wire [8 : 0] Qprim_reg_debug;
+    wire [2 : 0] SRT2counter_debug;
     
 
     alu dut (
@@ -45,13 +47,17 @@ module alu_tb;
         .next_state_debug(next_state_debug),
         .A_reg_debug(A_reg_debug),
         .Q_reg_debug(Q_reg_debug),
-        .M_reg_debug(M_reg_debug)
+        .M_reg_debug(M_reg_debug),
+        .Qprim_reg_debug(Qprim_reg_debug),
+        .SRT2counter_debug(SRT2counter_debug)
     );
 
     // clock generation
 
     initial begin
         clk = 1'b0;
+        
+        #1000 $stop; // timeout
     end
     always #5 clk = ~clk;
 
@@ -138,15 +144,20 @@ module alu_tb;
         #10;
         
         // Division test
+        
+        // numbers :: 4731 / 89 == 53 remainder 14 <=> 0001 0010 0111 1011 / 0101 1001 == 0011 0101 remainder 0000 1110
+        
         reset = 1'b1;
         #10;
         BEGIN   = 1'b1;
         op_code = 2'b11;
         reset = ~reset;
-        inbus = 8'd4731;
+        inbus = 8'b00010010;
         opA = inbus;
         #10 BEGIN = 1'b0;
-        inbus = 8'd89;
+        inbus = 8'b01111011;
+        opA = ( opA << 8 ) + inbus;
+        #10 inbus = 8'b01011001;
         expectedQuotient = opA / inbus;
         expectedRemainder = opA - ( inbus * expectedQuotient );
         wait (END);
