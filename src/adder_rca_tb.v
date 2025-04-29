@@ -18,9 +18,9 @@ module adder_rca_tb;
                  carry_out);
 
         // Test addition
-        x = 9'b000000011;
-        y = 9'b000000010;
-        carry_in = 0;
+        x = 9'b000000000;
+        y = 9'b010010010;
+        carry_in = 1;
         #10;
         x = 9'b000000001;
         y = 9'b000000001;
