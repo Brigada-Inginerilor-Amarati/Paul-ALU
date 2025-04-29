@@ -176,7 +176,7 @@ module alu (
     
     mux_2_to_1 MUX_LSHIFT_Q (
       .data_in ( { Q_value , 0 } ),
-	    .select ( LSHIFT_signal ),
+	    .select ( LSHIFT_signal | write_to_Qs_enable ),
 	    .data_out ( left_shift_value_Q )
     );
 
@@ -198,7 +198,7 @@ module alu (
     rgst reg_Qprim (
         .clk(clk),
         .reset(reset | initQandQprimregisters),
-        .load_enable(loadQprimregisterfromADDER | write_to_Qs_enable),
+        .load_enable(loadQprimregisterfromADDER),
         .left_shift_enable(LSHIFT_signal | write_to_Qs_enable),
         .left_shift_value(Qprim_value),
         .right_shift_enable(1'b0),

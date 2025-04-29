@@ -309,7 +309,7 @@ module control_unit_one_hot (
 
     // values to be written in SRT-2 Q and Qprim registers
     assign write_to_Qs_enable = next_state[LSHIFT];
-    assign Q_value = decision_on_flag_bits_of_A & ~bits_of_A[2];
-    assign Qprim_value = decision_on_flag_bits_of_A & bits_of_A[2];
+    assign Q_value = ~decision_on_flag_bits_of_A & bits_of_A[2];
+    assign Qprim_value = ~decision_on_flag_bits_of_A & ~bits_of_A[2];
 
 endmodule
