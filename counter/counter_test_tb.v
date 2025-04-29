@@ -1,4 +1,4 @@
-`timescale 1ns/1ps
+`timescale 1ns/1ns
 
 module counter_tb;
   //----------------------------------------------------------------------  
@@ -14,7 +14,7 @@ module counter_tb;
   //----------------------------------------------------------------------  
   // Instantiate DUT
   //----------------------------------------------------------------------  
-  counter #(
+  counter_struct #(
     .WIDTH(WIDTH)
   ) uut (
     .clk        (clk),
@@ -57,7 +57,7 @@ module counter_tb;
     // Now count down
     #10;
     count_down = 1;
-    #40;
+    #50;
     count_down = 0;
 
     // Do another up-count burst
@@ -68,7 +68,8 @@ module counter_tb;
 
     // Finish simulation
     #20;
-    $finish;
+    // $finish;
+    $stop;
   end
 
 endmodule

@@ -1,5 +1,5 @@
 // counter.v
-module counter #(
+module counter_struct #(
     parameter WIDTH = 3
 ) (
     input  wire             clk,
