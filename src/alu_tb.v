@@ -152,8 +152,6 @@ module alu_tb;
 
         // Division test
 
-        // numbers :: 4731 / 89 == 53 remainder 14 <=> 0001 0010 0111 1011 / 0101 1001 == 0011 0101 remainder 0000 1110
-
         reset = 1'b1;
         #10;
         BEGIN   = 1'b1;
