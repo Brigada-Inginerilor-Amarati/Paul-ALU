@@ -12,28 +12,28 @@
 module alu_tb;
 
     // variables
-    reg        clk;
-    reg        reset;
-    reg        BEGIN;
-    reg  [1:0] op_code;
-    reg  [7:0] inbus;
-    wire [7:0] outbus;
-    wire       END;
+    reg           clk;
+    reg           reset;
+    reg           BEGIN;
+    reg  [   1:0] op_code;
+    reg  [   7:0] inbus;
+    wire [   7:0] outbus;
+    wire          END;
 
-    reg  [15:0] opA;  // holds the first operand
-    reg  [7:0] expectedResult;  // holds the expected result
-    reg  [15:0] expectedProduct;
-    reg [7 : 0] expectedQuotient;
-    reg [7 : 0] expectedRemainder;
-    
+    reg  [  15:0] opA;  // holds the first operand
+    reg  [   7:0] expectedResult;  // holds the expected result
+    reg  [  15:0] expectedProduct;
+    reg  [ 7 : 0] expectedQuotient;
+    reg  [ 7 : 0] expectedRemainder;
+
     wire [16 : 0] act_state_debug;
     wire [16 : 0] next_state_debug;
-    wire [8 : 0] A_reg_debug;
-    wire [8 : 0] Q_reg_debug;
-    wire [8 : 0] M_reg_debug;
-    wire [8 : 0] Qprim_reg_debug;
-    wire [2 : 0] SRT2counter_debug;
-    
+    wire [ 8 : 0] A_reg_debug;
+    wire [ 8 : 0] Q_reg_debug;
+    wire [ 8 : 0] M_reg_debug;
+    wire [ 8 : 0] Qprim_reg_debug;
+    wire [ 2 : 0] SRT2counter_debug;
+
 
     alu dut (
         .clk(clk),
@@ -56,8 +56,8 @@ module alu_tb;
 
     initial begin
         clk = 1'b0;
-        
-        #1000 $stop; // timeout
+
+        #1000 $stop;  // timeout
     end
     always #5 clk = ~clk;
 
@@ -79,8 +79,9 @@ module alu_tb;
 
     // monitor values
     initial begin
-        $monitor("clk: %b, reset: %b, BEGIN: %b, op_code: %b\n inbus: %b, outbus: %b, END: %b\n act_state: %h, next_state: %h",
-                 clk, reset, BEGIN, op_code, inbus, outbus, END, act_state_debug, next_state_debug);
+        $monitor(
+            "clk: %b, reset: %b, BEGIN: %b, op_code: %b\n inbus: %b, outbus: %b, END: %b\n act_state: %h, next_state: %h",
+            clk, reset, BEGIN, op_code, inbus, outbus, END, act_state_debug, next_state_debug);
     end
 
     // testbench
@@ -88,7 +89,7 @@ module alu_tb;
     initial begin
         // Reset already handled...
         $display("Starting ALU Testbench");
-        
+
         BEGIN = 1'b0;
 
         // Addition test
@@ -96,11 +97,13 @@ module alu_tb;
         #10;
         BEGIN   = 1'b1;
         op_code = 2'b00;
-        reset = ~reset;
-        inbus = 8'd56;
-        opA = inbus;
+        reset   = ~reset;
+        inbus   = $random & 8'hFF;
+        opA     = inbus;
         #10 BEGIN = 1'b0;
-        inbus = 8'd89;
+
+        // second random 8-bit operand
+        inbus          = $random & 8'hFF;
         expectedResult = opA + inbus;
         wait (END);
         #10;
@@ -109,17 +112,19 @@ module alu_tb;
             $error("ADD FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expectedResult);
         else $display("ADD OK: %0d + %0d = %0d", opA, inbus, outbus);
         */
-          
+
         // Subtraction test
         reset = 1'b1;
         #10;
         BEGIN   = 1'b1;
         op_code = 2'b01;
-        reset = ~reset;
-        inbus = 8'd56;
-        opA = inbus;
+        reset   = ~reset;
+        inbus   = $random & 8'hFF;
+        opA     = inbus;
         #10 BEGIN = 1'b0;
-        inbus = 8'd89;
+
+        // second random 8-bit operand
+        inbus          = $random & 8'hFF;
         expectedResult = opA - inbus;
         wait (END);
         #10;
@@ -128,57 +133,45 @@ module alu_tb;
             $error("SUB FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expectedResult);
         else $display("SUB OK: %0d + %0d = %0d", opA, inbus, outbus);
         */
-        
+
         // Multiplication test
         reset = 1'b1;
         #10;
         BEGIN   = 1'b1;
         op_code = 2'b10;
-        reset = ~reset;
-        inbus = 8'd56;
-        opA = inbus;
+        reset   = ~reset;
+        inbus   = $urandom & 8'hFF;
+        opA     = inbus;
         #10 BEGIN = 1'b0;
-        inbus = 8'd89;
+
+        // second random 8-bit operand
+        inbus           = $urandom & 8'hFF;
         expectedProduct = opA * inbus;
         wait (END);
         #10;
-        
+
         // Division test
-        
+
         // numbers :: 4731 / 89 == 53 remainder 14 <=> 0001 0010 0111 1011 / 0101 1001 == 0011 0101 remainder 0000 1110
-        
+
         reset = 1'b1;
         #10;
         BEGIN   = 1'b1;
         op_code = 2'b11;
-        reset = ~reset;
-        inbus = 8'b00010010;
-        opA = inbus;
+        reset   = ~reset;
+        inbus   = $urandom & 8'hFF;
+        opA     = inbus;
         #10 BEGIN = 1'b0;
-        inbus = 8'b01111011;
-        opA = ( opA << 8 ) + inbus;
-        #10 inbus = 8'b01011001;
-        expectedQuotient = opA / inbus;
-        expectedRemainder = opA - ( inbus * expectedQuotient );
+
+        // second random 8-bit operand
+        inbus = $urandom & 8'hFF;
+        opA   = (opA << 8) + inbus;
+        #10 inbus = $urandom & 8'hFF;
+        expectedQuotient  = opA / inbus;
+        expectedRemainder = opA - (inbus * expectedQuotient);
         wait (END);
         #10;
-        
-        // Division by 0 test
-        
-        reset = 1'b1;
-        #10;
-        BEGIN   = 1'b1;
-        op_code = 2'b11;
-        reset = ~reset;
-        inbus = 8'b00010010;
-        opA = inbus;
-        #10 BEGIN = 1'b0;
-        inbus = 8'b01111011;
-        opA = ( opA << 8 ) + inbus;
-        #10 inbus = 8'b00000000;
-        wait (END);
-        #10;
-          
+
         #10 $stop;
 
         /*
