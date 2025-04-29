@@ -41,7 +41,7 @@ module control_unit_one_hot (
     output wire [16 : 0] next_state_debug
 );
 
-    wire reset; // due to big mishaps // acts like active on 0
+    wire reset;  // due to big mishaps // acts like active on 0
     assign reset = ~reset_input;
 
     // localparam to easily acces number of states
@@ -84,8 +84,8 @@ module control_unit_one_hot (
     // wires for actual and next state
     wire [number_of_states - 1 : 0] act_state;
     wire [number_of_states - 1 : 0] next_state;
-    
-    assign act_state_debug = act_state;
+
+    assign act_state_debug  = act_state;
     assign next_state_debug = next_state;
 
     // decisional data
@@ -160,7 +160,7 @@ module control_unit_one_hot (
         end
 
     endgenerate
-    
+
     wire left_in_neutral_state;
     // assign left_in_neutral_state = ( act_state == 0 );
     assign left_in_neutral_state = 1'b0;
@@ -170,8 +170,7 @@ module control_unit_one_hot (
     // can be optimised and factorised, right now written for clarity from FSM "schmematic"
 
     // endings are considered graceful endings here
-    assign next_state[IDLE] = left_in_neutral_state
-        | ~reset  // when HW is reset
+    assign next_state[IDLE] = left_in_neutral_state | ~reset  // when HW is reset
         | (act_state[IDLE] & ~BEGIN)  // waiting for BEGIN signal
         | (~op_code[1] & act_state[PUSHA])  // for add and sub operations ending
         | (op_code[1] & ~op_code[0] & act_state[PUSHQ])  // for mul operation ending
@@ -217,13 +216,13 @@ module control_unit_one_hot (
 
     // states for Radix-4 right shifting // specific only for mul
     assign next_state[RSHIFT] = ~BEGIN & reset
-                              & 
+                              &
                                 (
                                   (act_state[ADDMtoA] & op_code[1] & ~op_code[0]) // if ADDMtoA done
-                                  | (act_state[LOADM] & op_code[1] & ~op_code[0] & ~decision_on_bits_of_Q) // if first right shift after loadM
-                                  | (act_state[COUNTRSHIFTs] & ~decision_on_bits_of_Q) // if ADDMtoA not done after incrementing Radix-4 counter
-                                );
-    assign next_state[RSHIFT_DOUBLE] = ~BEGIN & reset & ( act_state[RSHIFT] );
+        | (act_state[LOADM] & op_code[1] & ~op_code[0] & ~decision_on_bits_of_Q) // if first right shift after loadM
+        | (act_state[COUNTRSHIFTs] & ~decision_on_bits_of_Q) // if ADDMtoA not done after incrementing Radix-4 counter
+        );
+    assign next_state[RSHIFT_DOUBLE] = ~BEGIN & reset & (act_state[RSHIFT]);
     assign next_state[COUNTRSHIFTs] = ~BEGIN & reset & ( (act_state[RSHIFT_DOUBLE] & ~decision_based_on_Radix4_counter) );
 
     // states for SRT-2 left shifting // result calculation Lshifts // general-case
