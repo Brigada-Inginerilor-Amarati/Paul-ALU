@@ -107,11 +107,6 @@ module alu_tb;
         expectedResult = opA + inbus;
         wait (END);
         #10;
-        /*
-        if (outbus != expectedResult)
-            $error("ADD FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expectedResult);
-        else $display("ADD OK: %0d + %0d = %0d", opA, inbus, outbus);
-        */
 
         // Subtraction test
         reset = 1'b1;
@@ -128,11 +123,6 @@ module alu_tb;
         expectedResult = opA - inbus;
         wait (END);
         #10;
-        /*
-        if (outbus != expectedResult)
-            $error("SUB FAIL: %0d + %0d => %0d, exp %0d", opA, inbus, outbus, expectedResult);
-        else $display("SUB OK: %0d + %0d = %0d", opA, inbus, outbus);
-        */
 
         // Multiplication test
         reset = 1'b1;
@@ -151,6 +141,29 @@ module alu_tb;
         #10;
 
         // Division test
+
+
+        // Division by zero test
+
+        reset = 1'b1;
+        #10;
+        BEGIN   = 1'b1;
+        op_code = 2'b11;
+        reset   = ~reset;
+        inbus   = $urandom & 8'hFF;
+        opA     = inbus;
+        #10 BEGIN = 1'b0;
+
+        // second random 8-bit operand
+        inbus = $urandom & 8'hFF;
+        opA   = (opA << 8) + inbus;
+        #10 inbus = 8'h0;
+        expectedQuotient  = opA / inbus;
+        expectedRemainder = opA - (inbus * expectedQuotient);
+        wait (END);
+        #10;
+
+        // Random number generation test
 
         reset = 1'b1;
         #10;
