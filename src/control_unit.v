@@ -198,16 +198,22 @@ module control_unit_one_hot (
 
     // states for OUTBUS loading
     assign next_state[PUSHA] = ~BEGIN & reset & ((act_state[ADDMtoA] & ~op_code[1])  // for add, sub
-        | (act_state[RSHIFT] & decision_based_on_Radix4_counter)  // for mul
+        | (act_state[RSHIFT_DOUBLE] & decision_based_on_Radix4_counter)  // for mul
         | (act_state[PUSHQ] & op_code[1] & op_code[0]));  // for div
     assign next_state[PUSHQ] = ~BEGIN & reset & ((act_state[PUSHA] & op_code[1] & ~op_code[0])  // for mul
         | (act_state[ADDminQprimtoQ] & decision_based_on_Leading0s_counter)  // for div
         | (act_state[RSHIFTfor0] & decision_based_on_Leading0s_counter));
 
     // states for Radix-4 right shifting // specific only for mul
-    assign next_state[RSHIFT] = ~BEGIN & reset & ((act_state[ADDMtoA] & op_code[1] & ~op_code[0]));
+    assign next_state[RSHIFT] = ~BEGIN & reset
+                              & 
+                                (
+                                  (act_state[ADDMtoA] & op_code[1] & ~op_code[0]) // if ADDMtoA done
+                                  | (act_state[LOADM] & op_code[1] & ~op_code[0] & ~decision_on_bits_of_Q) // if first right shift after loadM
+                                  | (act_state[COUNTRSHIFTs] & ~decision_on_bits_of_Q) // if ADDMtoA not done after incrementing Radix-4 counter
+                                );
     assign next_state[RSHIFT_DOUBLE] = ~BEGIN & reset & ( act_state[RSHIFT] );
-    assign next_state[COUNTRSHIFTs] = ~BEGIN & reset & ( (act_state[RSHIFT] & ~decision_based_on_Radix4_counter) );
+    assign next_state[COUNTRSHIFTs] = ~BEGIN & reset & ( (act_state[RSHIFT_DOUBLE] & ~decision_based_on_Radix4_counter) );
 
     // states for SRT-2 left shifting // result calculation Lshifts // general-case
     assign next_state[LSHIFT] = ~BEGIN & reset & ( ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s ) // also need to update the flags for ADDMtoA next_next_state

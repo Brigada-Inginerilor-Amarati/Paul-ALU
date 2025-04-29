@@ -53,11 +53,13 @@ module alu_tb;
     end
     always #5 clk = ~clk;
 
+    /*
     // reset generation
     initial begin
         reset = 1'b1;
         #10 reset = 1'b0;
     end
+    */
 
     /*
     // set timeout
@@ -78,11 +80,16 @@ module alu_tb;
     initial begin
         // Reset already handled...
         $display("Starting ALU Testbench");
+        
+        BEGIN = 1'b0;
 
         // Addition test
+        reset = 1'b1;
+        #10;
         BEGIN   = 1'b1;
         op_code = 2'b00;
-        #10 inbus = 8'd56;
+        reset = ~reset;
+        inbus = 8'd56;
         opA = inbus;
         #10 BEGIN = 1'b0;
         inbus = 8'd89;
@@ -96,9 +103,12 @@ module alu_tb;
         */
           
         // Subtraction test
+        reset = 1'b1;
+        #10;
         BEGIN   = 1'b1;
         op_code = 2'b01;
-        #10 inbus = 8'd56;
+        reset = ~reset;
+        inbus = 8'd56;
         opA = inbus;
         #10 BEGIN = 1'b0;
         inbus = 8'd89;
@@ -112,9 +122,12 @@ module alu_tb;
         */
         
         // Multiplication test
+        reset = 1'b1;
+        #10;
         BEGIN   = 1'b1;
         op_code = 2'b10;
-        #10 inbus = 8'd56;
+        reset = ~reset;
+        inbus = 8'd56;
         opA = inbus;
         #10 BEGIN = 1'b0;
         inbus = 8'd89;
@@ -122,17 +135,19 @@ module alu_tb;
         wait (END);
         #10;
         
-        /*
         // Division test
+        reset = 1'b1;
+        #10;
         BEGIN   = 1'b1;
         op_code = 2'b11;
-        #10 inbus = 8'd56;
+        reset = ~reset;
+        inbus = 8'd4731;
         opA = inbus;
         #10 BEGIN = 1'b0;
         inbus = 8'd89;
-        expectedProduct = opA - inbus;
+        expectedProduct = opA * inbus;
         wait (END);
-        */
+        #10;
           
         #10 $stop;
 

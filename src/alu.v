@@ -111,6 +111,9 @@ module alu (
         .count_down(decrement_Leading0s),
         .cnt(leading_zeros_counter_bits)
     );
+    
+    assign countRadix4full = op_counter_bits[1] & op_counter_bits[0];
+    assign countSRT2full = op_counter_bits[2] & op_counter_bits[1] & op_counter_bits[0];
 
     //=========================================
     // RCA ADDER
@@ -136,6 +139,9 @@ module alu (
     wire [8:0] A, Q, Qprim, M;
     wire [8:0] data_in_A, data_in_Q, data_in_Qprim, data_in_M;
     wire left_shift_enable, left_shift_value_Q, right_shift_enable, right_shift_value_A;
+    
+    assign bits_of_Q = { Q[2], Q[1], Q[0] };
+    assign bits_of_A = { A[8], A[7], A[6] };
     
     // debug purposesr
 
