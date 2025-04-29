@@ -224,9 +224,9 @@ module control_unit_one_hot (
     // states for SRT-2 operand formatting
     assign next_state[LSHIFTfor0] = ~BEGIN & reset
                                   & (
-                                      ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s )
-                                      | ( act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s )
-                                  );
+                                      ( act_state[LOADM] & op_code[1] & op_code[0] & ~decision_based_on_MSb_of_M_related_to_leading0s )
+                                      | ( act_state[LSHIFTfor0] & ~decision_based_on_MSb_of_M_related_to_leading0s )
+                                    );
     assign next_state[RSHIFTfor0] = ~BEGIN & reset
                                   & (
                                       ( act_state[ADDminQprimtoQ] & ~decision_based_on_Leading0s_counter )
@@ -250,7 +250,7 @@ module control_unit_one_hot (
     assign initCounters = next_state[LOADM];
 
     // control leading 0s
-    assign increment_Leading0s = next_state[LSHIFTfor0];
+    assign increment_Leading0s = next_state[LSHIFTfor0] & ~sgn_bit_of_M;
     assign decrement_Leading0s = next_state[RSHIFTfor0];
 
     //increment normal counters

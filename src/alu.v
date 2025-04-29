@@ -209,7 +209,7 @@ module alu (
         .clk(clk),
         .reset(reset),
         .load_enable(loadMregister_from_INBUS),
-        .left_shift_enable(LSHIFT_signal),
+        .left_shift_enable(LSHIFT_signal | increment_Leading0s),
         .left_shift_value(1'b0),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
