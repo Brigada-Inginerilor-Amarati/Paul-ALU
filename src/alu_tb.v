@@ -23,6 +23,8 @@ module alu_tb;
     reg  [7:0] opA;  // holds the first operand
     reg  [7:0] expectedResult;  // holds the expected result
     reg  [15:0] expectedProduct;
+    reg [7 : 0] expectedQuotient;
+    reg [7 : 0] expectedRemainder;
     
     wire [16 : 0] act_state_debug;
     wire [16 : 0] next_state_debug;
@@ -145,7 +147,8 @@ module alu_tb;
         opA = inbus;
         #10 BEGIN = 1'b0;
         inbus = 8'd89;
-        expectedProduct = opA * inbus;
+        expectedQuotient = opA / inbus;
+        expectedRemainder = opA - ( inbus * expectedQuotient );
         wait (END);
         #10;
           
