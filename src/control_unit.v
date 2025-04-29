@@ -157,7 +157,8 @@ module control_unit_one_hot (
     endgenerate
     
     wire left_in_neutral_state;
-    assign left_in_neutral_state = ( act_state == 0 );
+    // assign left_in_neutral_state = ( act_state == 0 );
+    assign left_in_neutral_state = 1'b0;
 
     // assigning all next states
 

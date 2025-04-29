@@ -1,9 +1,9 @@
 module fac(
-  input x,
-  input y,
-  input carry_in,
-  output carry_out,
-  output sum
+  input wire x,
+  input wire y,
+  input wire carry_in,
+  output wire carry_out,
+  output wire sum
 );
 
   assign sum = x ^ y ^ carry_in;
@@ -14,11 +14,11 @@ endmodule
 module adder_rca #(
   parameter w = 9
 )(
-  input [w - 1 : 0] x,
-  input [w - 1 : 0] y,
-  input carry_in, // 0 addition, 1 substraction
-  output [w - 1 : 0] sum,
-  output reg carry_out
+  input wire [w - 1 : 0] x,
+  input wire [w - 1 : 0] y,
+  input wire carry_in, // 0 addition, 1 substraction
+  output wire [w - 1 : 0] sum,
+  output wire carry_out
 );
 
   wire [w : 0] carry;
@@ -39,8 +39,6 @@ module adder_rca #(
     end
   endgenerate
   
-  always @(*) begin
-    carry_out = carry[w];
-  end
+  assign carry_out = carry[w];
 
 endmodule

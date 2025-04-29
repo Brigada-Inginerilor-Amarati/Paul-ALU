@@ -355,16 +355,23 @@ module alu (
     // MUXs FOR OUTBUS
     //==========================================
     
+    wire [7 : 0] outbus_interm;
+    
     generate
       
       for ( i = 0; i < 8; i = i + 1 ) begin
         
-        // tri-state driver output can be added for fun, right now we need to make it work
-        
-        
-        mux_2_to_1 MUX_OUTBUS (
+        // MUXs for data selection (if A or Q is pushed)
+        mux_2_to_1 MUX_OUTBUS_DATA_SELECTION (
           .data_in ( { A[i], Q[i + 1] } ),
           .select ( pushAregister & ~pushQregister ),
+          .data_out ( outbus_interm[i] )
+        );
+        
+        // MUXs for data transmission (if data needs to be transmitted)
+        mux_2_to_1 MUX_OUTBUS_DATA_SENDING (
+          .data_in ( { outbus_interm[i], 1'bz } ),
+          .select ( pushAregister | pushQregister ),
           .data_out ( outbus[i] )
         );
         
