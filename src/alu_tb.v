@@ -20,7 +20,7 @@ module alu_tb;
     wire [7:0] outbus;
     wire       END;
 
-    reg  [7:0] opA;  // holds the first operand
+    reg  [15:0] opA;  // holds the first operand
     reg  [7:0] expectedResult;  // holds the expected result
     reg  [15:0] expectedProduct;
     reg [7 : 0] expectedQuotient;

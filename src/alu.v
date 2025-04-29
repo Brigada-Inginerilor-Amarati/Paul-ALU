@@ -98,7 +98,7 @@ module alu (
     // COUNTERS
     //==========================================
 
-    counter op_counter (
+    counter_struct op_counter (
         .clk(clk),
         .reset(reset | initCounters),
         .count_up(increment_Radix4Counter | increment_SRT2Counter),
@@ -109,7 +109,7 @@ module alu (
     assign countRadix4full = op_counter_bits[1] & op_counter_bits[0];
     assign countSRT2full = op_counter_bits[2] & op_counter_bits[1] & op_counter_bits[0];
 
-    counter leading_zeros_counter (
+    counter_struct leading_zeros_counter (
         .clk(clk),
         .reset(reset | initCounters),
         .count_up(increment_Leading0s),
@@ -183,8 +183,8 @@ module alu (
     rgst reg_Q (
         .clk(clk),
         .reset(reset | initQandQprimregisters),
-        .load_enable(loadQregister_from_INBUS | loadQregisterfromADDER | write_to_Qs_enable),
-        .left_shift_enable(LSHIFT_signal | increment_Leading0s),
+        .load_enable(loadQregister_from_INBUS | loadQregisterfromADDER),
+        .left_shift_enable(LSHIFT_signal | increment_Leading0s | write_to_Qs_enable),
         .left_shift_value(left_shift_value_Q),
         .right_shift_enable(RSHIFT_signal),
         .right_shift_value(A[0]),
@@ -199,7 +199,7 @@ module alu (
         .clk(clk),
         .reset(reset | initQandQprimregisters),
         .load_enable(loadQprimregisterfromADDER | write_to_Qs_enable),
-        .left_shift_enable(LSHIFT_signal),
+        .left_shift_enable(LSHIFT_signal | write_to_Qs_enable),
         .left_shift_value(Qprim_value),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
