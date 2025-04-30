@@ -1,6 +1,6 @@
 // rework on FSM, one-hot style
 
-module control_unit_one_hot (
+module control_unit (
     input wire reset_input,  // sets state to IDLE // active on 1 // inside module active on 0 // check reset wire
     clk,
     BEGIN,  // upper-case because of syntax
@@ -92,7 +92,7 @@ module control_unit_one_hot (
     // decisional data
 
     wire decision_on_bits_of_Q;
-    wire decision_on_flag_bits_of_A; // skips ADDMtoA
+    wire decision_on_flag_bits_of_A;  // skips ADDMtoA
     wire decision_based_on_correction;
     wire decision_based_on_correction_other;
     wire decision_based_on_Radix4_counter;
@@ -103,11 +103,11 @@ module control_unit_one_hot (
     // value for decisional flag
 
     // intermediate wire, for ease of writing
-    wire interm_decision_on_flag_bits_of_A; // skips ADDMtoA
+    wire interm_decision_on_flag_bits_of_A;  // skips ADDMtoA
     assign interm_decision_on_flag_bits_of_A = ( act_state[LSHIFT] & decision_on_flag_bits_of_A ) // to ensure flag is taken right before LSHIFT and kept over its duration
-                                             | (
+        | (
                                                ( act_state[COUNTLSHIFTs] | act_state[LSHIFTfor0] | ( act_state[LOADM] & op_code[1] & op_code[0] ) ) // select when to set value
-                                               & (
+        & (
                                                   ~(
                                                       ( bits_of_A[2] & bits_of_A[1] & bits_of_A[0] )
                                                       | ( ~bits_of_A[2] & ~bits_of_A[1] & ~bits_of_A[0] )
@@ -118,7 +118,7 @@ module control_unit_one_hot (
     dff dff_inst (
         .clk(clk),
         .reset(reset),
-        .load_enable( 1'b1 ),
+        .load_enable(1'b1),
         .data_in ( interm_decision_on_flag_bits_of_A & sgn_bit_of_M ), // sgn_bit_of_M just to be sure // shouldn't be needed
         .data_out(decision_on_flag_bits_of_A)
     );
@@ -171,8 +171,7 @@ module control_unit_one_hot (
     // can be optimised and factorised, right now written for clarity from FSM "schmematic"
 
     // endings are considered graceful endings here
-    assign next_state[IDLE] = END
-        | left_in_neutral_state | ~reset  // when HW is reset
+    assign next_state[IDLE] = END | left_in_neutral_state | ~reset  // when HW is reset
         | (act_state[IDLE] & ~BEGIN)  // waiting for BEGIN signal
         | (~op_code[1] & act_state[PUSHA])  // for add and sub operations ending
         | (op_code[1] & ~op_code[0] & act_state[PUSHQ])  // for mul operation ending
@@ -198,13 +197,13 @@ module control_unit_one_hot (
     assign next_state[ADDMtoACORRECTION] = ~BEGIN & reset
                                          & (
                                               ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction ) // only for div correction // correction needs to be decided on SRT-2 counter and MSb of A
-                                              | ( act_state[LSHIFT] & decision_on_flag_bits_of_A & decision_based_on_correction ) // skip ADDMtoA from LSHIFT
-                                            );
+        | ( act_state[LSHIFT] & decision_on_flag_bits_of_A & decision_based_on_correction ) // skip ADDMtoA from LSHIFT
+        );
     assign next_state[ADD1toQprim] = ~BEGIN & reset & ( ( act_state[ADDMtoACORRECTION] ) ); // to complete SRT-2 correction
     assign next_state[ADDminQprimtoQ] = ~BEGIN & reset
                                       & (
                                           ( act_state[ADDMtoA] & op_code[1] & op_code[0] & decision_based_on_correction_other ) // to find real value of Q register in SRT-2 algorithm
-                                          | ( act_state[LSHIFT] & decision_based_on_correction_other & decision_on_flag_bits_of_A )
+        | ( act_state[LSHIFT] & decision_based_on_correction_other & decision_on_flag_bits_of_A )
                                           | ( act_state[ADD1toQprim] )
                                         ); // if correction was applied
 
@@ -215,9 +214,8 @@ module control_unit_one_hot (
     assign next_state[PUSHQ] = ~BEGIN & reset
                              & (
                                   ( act_state[PUSHA] & op_code[1] & ~op_code[0] )  // for mul
-                                  | ( act_state[ADDminQprimtoQ] & decision_based_on_Leading0s_counter )  // for div
-                                  | ( act_state[RSHIFTfor0] & decision_based_on_Leading0s_counter )
-                               );
+        | (act_state[ADDminQprimtoQ] & decision_based_on_Leading0s_counter)  // for div
+        | (act_state[RSHIFTfor0] & decision_based_on_Leading0s_counter));
 
     // states for Radix-4 right shifting // specific only for mul
     assign next_state[RSHIFT] = ~BEGIN & reset
@@ -232,9 +230,9 @@ module control_unit_one_hot (
 
     // states for SRT-2 left shifting // result calculation Lshifts // general-case
     assign next_state[LSHIFT] = ~BEGIN & reset &
-                              ( 
+                              (
                                 ( act_state[LOADM] & op_code[1] & op_code[0] & decision_based_on_MSb_of_M_related_to_leading0s ) // also need to update the flags for ADDMtoA next_next_state
-                                | ( act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s )
+        | ( act_state[LSHIFTfor0] & decision_based_on_MSb_of_M_related_to_leading0s )
                                 | ( act_state[COUNTLSHIFTs] )
                               );
     assign next_state[COUNTLSHIFTs] = ~BEGIN & reset &

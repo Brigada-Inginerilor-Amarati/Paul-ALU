@@ -54,7 +54,7 @@ module alu (
     wire [2:0] op_counter_bits;
     wire [2:0] leading_zeros_counter_bits;
 
-    control_unit_one_hot cu (
+    control_unit cu (
         .clk(clk),
         .reset_input(reset),
         .BEGIN(BEGIN),
@@ -93,35 +93,35 @@ module alu (
         .END(END),
         .act_state_debug(act_state_debug),
         .next_state_debug(next_state_debug),
-        .M_is_0 ( M_is_0 )
+        .M_is_0(M_is_0)
     );
 
     //=========================================
     // COUNTERS
     //==========================================
 
-    counter_struct op_counter (
+    counter op_counter (
         .clk(clk),
         .reset(reset | initCounters),
         .count_up(increment_Radix4Counter | increment_SRT2Counter),
         .count_down(1'b0),
         .cnt(op_counter_bits)
     );
-    
-    assign countRadix4full = op_counter_bits[1] & op_counter_bits[0];
-    assign countSRT2full = op_counter_bits[2] & op_counter_bits[1] & op_counter_bits[0];
 
-    counter_struct leading_zeros_counter (
+    assign countRadix4full = op_counter_bits[1] & op_counter_bits[0];
+    assign countSRT2full   = op_counter_bits[2] & op_counter_bits[1] & op_counter_bits[0];
+
+    counter leading_zeros_counter (
         .clk(clk),
         .reset(reset | initCounters),
         .count_up(increment_Leading0s),
         .count_down(decrement_Leading0s),
         .cnt(leading_zeros_counter_bits)
     );
-    
+
     assign countLeading0sempty = ~leading_zeros_counter_bits[1] & ~leading_zeros_counter_bits[0];
-    
-    assign SRT2counter_debug = op_counter_bits;
+
+    assign SRT2counter_debug   = op_counter_bits;
 
     //=========================================
     // RCA ADDER
@@ -147,20 +147,20 @@ module alu (
     wire [8:0] A, Q, Qprim, M;
     wire [8:0] data_in_A, data_in_Q, data_in_Qprim, data_in_M;
     wire left_shift_enable, left_shift_value_Q, right_shift_enable, right_shift_value_A;
-    
-    assign bits_of_Q = { Q[2], Q[1], Q[0] };
-    assign bits_of_A = { A[8], A[7], A[6] };
-    
+
+    assign bits_of_Q   = {Q[2], Q[1], Q[0]};
+    assign bits_of_A   = {A[8], A[7], A[6]};
+
     // debug purposesr
 
     assign A_reg_debug = A;
     assign Q_reg_debug = Q;
     assign M_reg_debug = M;
-    
+
     mux_2_to_1 MUX_RSHIFT_A (
-      .data_in ( { 1'b0, A[8] } ),
-	    .select ( decrement_Leading0s ),
-	    .data_out ( right_shift_value_A )
+        .data_in ({1'b0, A[8]}),
+        .select  (decrement_Leading0s),
+        .data_out(right_shift_value_A)
     );
 
     rgst reg_A (
@@ -171,15 +171,15 @@ module alu (
         .left_shift_value(Q[8]),
         .right_shift_enable(RSHIFT_signal | decrement_Leading0s),
         .right_shift_value(right_shift_value_A),
-        .jump_LSb ( 1'b0 ),
+        .jump_LSb(1'b0),
         .data_in(data_in_A),
         .data_out(A)
     );
-    
+
     mux_2_to_1 MUX_LSHIFT_Q (
-      .data_in ( { Q_value , 0 } ),
-	    .select ( LSHIFT_signal | write_to_Qs_enable ),
-	    .data_out ( left_shift_value_Q )
+        .data_in ({Q_value, 1'b0}),
+        .select  (LSHIFT_signal | write_to_Qs_enable),
+        .data_out(left_shift_value_Q)
     );
 
     rgst reg_Q (
@@ -190,12 +190,12 @@ module alu (
         .left_shift_value(left_shift_value_Q),
         .right_shift_enable(RSHIFT_signal),
         .right_shift_value(A[0]),
-        .jump_LSb ( op_code[1] & op_code[0] ),
+        .jump_LSb(op_code[1] & op_code[0]),
         .data_in(data_in_Q),
         .data_out(Q)
     );
-    
-    assign data_in_Qprim = { adder_SUM[7 : 0], 1'b0 };
+
+    assign data_in_Qprim = {adder_SUM[7 : 0], 1'b0};
 
     rgst reg_Qprim (
         .clk(clk),
@@ -205,16 +205,16 @@ module alu (
         .left_shift_value(Qprim_value),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
-        .jump_LSb ( op_code[1] & op_code[0] ),
+        .jump_LSb(op_code[1] & op_code[0]),
         .data_in(data_in_Qprim),
         .data_out(Qprim)
     );
-    
+
     assign Qprim_reg_debug = Qprim;
-    
-    assign data_in_M = { inbus[7] & ~( op_code[1] & op_code[0] ), inbus };
+
+    assign data_in_M = {inbus[7] & ~(op_code[1] & op_code[0]), inbus};
     assign sgn_bit_of_M = M[7];
-    
+
     assign M_is_0 = ~M[8] & ~M[7] & ~M[6] & ~M[5] & ~M[4] & ~M[3] & ~M[2] & ~M[1] & ~M[0];
 
     rgst reg_M (
@@ -225,7 +225,7 @@ module alu (
         .left_shift_value(1'b0),
         .right_shift_enable(1'b0),
         .right_shift_value(1'b0),
-        .jump_LSb ( 1'b0 ),
+        .jump_LSb(1'b0),
         .data_in(data_in_M),
         .data_out(M)
     );
@@ -233,169 +233,170 @@ module alu (
     //=========================================
     // MUXs FOR REGISTER DATA INPUTS
     //==========================================
-    
+
     genvar i;
-    
+
     generate
-      
-      for ( i = 0; i < 9; i = i + 1 ) begin
-        
-        // MUX for A register
-        if ( i < 8 ) // avg case, normal 8-bit data
-          mux_2_to_1 MUX_DATAIN_A (
-            .data_in ( { adder_SUM[i], inbus[i] } ),
-	          .select ( loadAregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
-          );
-        else // useful only for SRT-2 // and not even then
-          mux_2_to_1 MUX_DATAIN_A (
-            .data_in ( { adder_SUM[i], 1'b0 } ),
-	          .select ( loadAregisterfromADDER ),
-	          .data_out ( data_in_A[i] )
-          );
-          
-        // MUX for Q register // must account for offset of 1 // mathematically, in Radix-4, there is Q[-1]
-                              // problem solved with jump_LSb in rgst module interface
-        if ( i == 0 ) // exceptional init case // for Radix-4
-          mux_2_to_1 MUX_DATAIN_Q (
-            .data_in ( { 1'b0, 1'b0 } ),
-	          .select ( loadQregisterfromADDER ),
-	          .data_out ( data_in_Q[i] )
-          );
-        else // avg case
-          mux_2_to_1 MUX_DATAIN_Q (
-            .data_in ( { adder_SUM[i - 1], inbus[i - 1] } ),
-	          .select ( loadQregisterfromADDER ),
-	          .data_out ( data_in_Q[i] )
-          );
-        
-      end
-      
+
+        for (i = 0; i < 9; i = i + 1) begin
+
+            // MUX for A register
+            if (i < 8)  // avg case, normal 8-bit data
+                mux_2_to_1 MUX_DATAIN_A (
+                    .data_in ({adder_SUM[i], inbus[i]}),
+                    .select  (loadAregisterfromADDER),
+                    .data_out(data_in_A[i])
+                );
+            else  // useful only for SRT-2 // and not even then
+                mux_2_to_1 MUX_DATAIN_A (
+                    .data_in ({adder_SUM[i], 1'b0}),
+                    .select  (loadAregisterfromADDER),
+                    .data_out(data_in_A[i])
+                );
+
+            // MUX for Q register // must account for offset of 1 // mathematically, in Radix-4, there is Q[-1]
+            // problem solved with jump_LSb in rgst module interface
+            if (i == 0)  // exceptional init case // for Radix-4
+                mux_2_to_1 MUX_DATAIN_Q (
+                    .data_in ({1'b0, 1'b0}),
+                    .select  (loadQregisterfromADDER),
+                    .data_out(data_in_Q[i])
+                );
+            else  // avg case
+                mux_2_to_1 MUX_DATAIN_Q (
+                    .data_in ({adder_SUM[i-1], inbus[i-1]}),
+                    .select  (loadQregisterfromADDER),
+                    .data_out(data_in_Q[i])
+                );
+
+        end
+
     endgenerate
 
     //=========================================
     // MUXs FOR ADDER DATA INPUTS
     //==========================================
-    
+
     wire [8 : 0] hileftMUX, loleftMUX, hirightMUX, lorightMUX, hiMUX, loMUX;
     assign operand_A = hiMUX;
     assign operand_B = loMUX;
-    
-    generate // (-1) operands taken care of by sum or dif signal
-      
-      for ( i = 0; i < 9; i = i + 1 ) begin
-        
-        // written with 2 to 1 MUXs instead of 4 to 1 MUXs
-        // for ease of writing, according to signals from CU
-        
-        // left side == A and 1/2M; right side == 1/Q and +-Qprim
-        
-        // hi side
-        // for OPERAND A // can be ::   A   A   A   A   1       Q
-        
-        // left side
-        mux_2_to_1 hiMUX_A_A (
-          .data_in ( { A[i], A[i] } ),
-          .select ( select2Msum ),
-          .data_out ( hileftMUX[i] )
-        );
-        
-        // right side
-        if ( i == 0 ) // for LSb of 1
-          mux_2_to_1 hiMUX_1_Q (
-            .data_in ( { 1'b1, Q[i + 1] } ), // all Qs and Qprims to be modified to account for Q[-1] anomaly
-            .select ( selectQprimcorrection & ~selectQandQprimdif ),
-            .data_out ( hirightMUX[i] )
-          );
-        else if ( i < 8 )
-          mux_2_to_1 hiMUX_1_Q (
-            .data_in ( { 1'b0, Q[i + 1] } ),
-            .select ( selectQprimcorrection & ~selectQandQprimdif ),
-            .data_out ( hirightMUX[i] )
-          );
-        else 
-          mux_2_to_1 hiMUX_1_Q (
-            .data_in ( { 1'b0, Q[i] } ),
-            .select ( selectQprimcorrection & ~selectQandQprimdif ),
-            .data_out ( hirightMUX[i] )
-          );
-          
-        // final choice
-        mux_2_to_1 hiMUX_final (
-          .data_in ( { hileftMUX[i], hirightMUX[i] } ),
-          .select ( selectAandMsum & ~selectQandQprimdif & ~selectQprimcorrection ),
-          .data_out ( hiMUX[i] )
-        );
-        
-        // lo side
-        // for OPERAND B // can be :: +1M -1M +2M -2M Qprim  -Qprim
-        
-        // left side
-        if ( i == 0 ) // for LSb of M in case of 2M
-          mux_2_to_1 loMUX_1M_2M (
-            .data_in ( { 1'b0, M[i] } ),
-            .select ( select2Msum ),
-            .data_out ( loleftMUX[i] )
-          );
-        else
-          mux_2_to_1 loMUX_1M_2M (
-            .data_in ( { M[i - 1], M[i] } ),
-            .select ( select2Msum ),
-            .data_out ( loleftMUX[i] )
-          );
-          
-        // right side
-        if ( i < 8 )
-          mux_2_to_1 hiMUX_Qprim_Qprim (
-            .data_in ( { Qprim[i + 1], Qprim[i + 1] } ),
-            .select ( selectQprimcorrection & ~selectQandQprimdif ),
-            .data_out ( lorightMUX[i] )
-          );
-        else
-          mux_2_to_1 hiMUX_Qprim_Qprim (
-            .data_in ( { Qprim[i], Qprim[i] } ),
-            .select ( selectQprimcorrection & ~selectQandQprimdif ),
-            .data_out ( lorightMUX[i] )
-          );
-          
-        // final choice
-        mux_2_to_1 loMUX_final (
-          .data_in ( { loleftMUX[i], lorightMUX[i] } ),
-          .select ( selectAandMsum & ~selectQandQprimdif & ~selectQprimcorrection ),
-          .data_out ( loMUX[i] )
-        );
-        
-      end
-      
+
+    generate  // (-1) operands taken care of by sum or dif signal
+
+        for (i = 0; i < 9; i = i + 1) begin
+
+            // written with 2 to 1 MUXs instead of 4 to 1 MUXs
+            // for ease of writing, according to signals from CU
+
+            // left side == A and 1/2M; right side == 1/Q and +-Qprim
+
+            // hi side
+            // for OPERAND A // can be ::   A   A   A   A   1       Q
+
+            // left side
+            mux_2_to_1 hiMUX_A_A (
+                .data_in ({A[i], A[i]}),
+                .select  (select2Msum),
+                .data_out(hileftMUX[i])
+            );
+
+            // right side
+            if (i == 0)  // for LSb of 1
+                mux_2_to_1 hiMUX_1_Q (
+                    .data_in({
+                        1'b1, Q[i+1]
+                    }),  // all Qs and Qprims to be modified to account for Q[-1] anomaly
+                    .select(selectQprimcorrection & ~selectQandQprimdif),
+                    .data_out(hirightMUX[i])
+                );
+            else if (i < 8)
+                mux_2_to_1 hiMUX_1_Q (
+                    .data_in ({1'b0, Q[i+1]}),
+                    .select  (selectQprimcorrection & ~selectQandQprimdif),
+                    .data_out(hirightMUX[i])
+                );
+            else
+                mux_2_to_1 hiMUX_1_Q (
+                    .data_in ({1'b0, Q[i]}),
+                    .select  (selectQprimcorrection & ~selectQandQprimdif),
+                    .data_out(hirightMUX[i])
+                );
+
+            // final choice
+            mux_2_to_1 hiMUX_final (
+                .data_in ({hileftMUX[i], hirightMUX[i]}),
+                .select  (selectAandMsum & ~selectQandQprimdif & ~selectQprimcorrection),
+                .data_out(hiMUX[i])
+            );
+
+            // lo side
+            // for OPERAND B // can be :: +1M -1M +2M -2M Qprim  -Qprim
+
+            // left side
+            if (i == 0)  // for LSb of M in case of 2M
+                mux_2_to_1 loMUX_1M_2M (
+                    .data_in ({1'b0, M[i]}),
+                    .select  (select2Msum),
+                    .data_out(loleftMUX[i])
+                );
+            else
+                mux_2_to_1 loMUX_1M_2M (
+                    .data_in ({M[i-1], M[i]}),
+                    .select  (select2Msum),
+                    .data_out(loleftMUX[i])
+                );
+
+            // right side
+            if (i < 8)
+                mux_2_to_1 hiMUX_Qprim_Qprim (
+                    .data_in ({Qprim[i+1], Qprim[i+1]}),
+                    .select  (selectQprimcorrection & ~selectQandQprimdif),
+                    .data_out(lorightMUX[i])
+                );
+            else
+                mux_2_to_1 hiMUX_Qprim_Qprim (
+                    .data_in ({Qprim[i], Qprim[i]}),
+                    .select  (selectQprimcorrection & ~selectQandQprimdif),
+                    .data_out(lorightMUX[i])
+                );
+
+            // final choice
+            mux_2_to_1 loMUX_final (
+                .data_in ({loleftMUX[i], lorightMUX[i]}),
+                .select  (selectAandMsum & ~selectQandQprimdif & ~selectQprimcorrection),
+                .data_out(loMUX[i])
+            );
+
+        end
+
     endgenerate
 
     //=========================================
     // MUXs FOR OUTBUS
     //==========================================
-    
+
     wire [7 : 0] outbus_interm;
-    
+
     generate
-      
-      for ( i = 0; i < 8; i = i + 1 ) begin
-        
-        // MUXs for data selection (if A or Q is pushed)
-        mux_2_to_1 MUX_OUTBUS_DATA_SELECTION (
-          .data_in ( { A[i], Q[i + 1] } ),
-          .select ( pushAregister & ~pushQregister ),
-          .data_out ( outbus_interm[i] )
-        );
-        
-        // MUXs for data transmission (if data needs to be transmitted)
-        mux_2_to_1 MUX_OUTBUS_DATA_SENDING (
-          .data_in ( { outbus_interm[i], 1'bz } ),
-          .select ( pushAregister | pushQregister ),
-          .data_out ( outbus[i] )
-        );
-        
-      end
-      
+
+        for (i = 0; i < 8; i = i + 1) begin
+
+            // MUXs for data selection (if A or Q is pushed)
+            mux_2_to_1 MUX_OUTBUS_DATA_SELECTION (
+                .data_in ({A[i], Q[i+1]}),
+                .select  (pushAregister & ~pushQregister),
+                .data_out(outbus_interm[i])
+            );
+
+            // MUXs for data transmission (if data needs to be transmitted)
+            mux_2_to_1 MUX_OUTBUS_DATA_SENDING (
+                .data_in ({outbus_interm[i], 1'bz}),
+                .select  (pushAregister | pushQregister),
+                .data_out(outbus[i])
+            );
+
+        end
+
     endgenerate
 
 endmodule
-

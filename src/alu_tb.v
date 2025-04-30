@@ -1,12 +1,3 @@
-/*
-`include "adder_rca.v"
-`include "alu.v"
-`include "control_unit.v"
-`include "counter.v"
-`include "dff.v"
-`include "mux.v"
-`include "rgst.v"
-*/
 `timescale 1ns / 1ns
 
 module alu_tb;
@@ -184,22 +175,6 @@ module alu_tb;
         #10;
 
         #10 $stop;
-
-        /*
-        // Multiplication test
-        BEGIN   = 1'b1;
-        op_code = 2'b10;
-        #10 inbus = 8'd7;
-        opA = inbus;
-        #10 BEGIN = 1'b0;
-        #10 inbus = 8'd3;
-        expectedProduct = opA * inbus;
-        wait (END);
-        /*
-        if (outbus !== expectedProduct)
-            $error("MUL FAIL: %0d * %0d => %0d, exp %0d", opA, inbus, outbus, expectedProduct);
-        else $display("MUL OK: %0d * %0d = %0d", opA, inbus, outbus);
-        */
 
         // $display("All tests done.");
         // $finish;

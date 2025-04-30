@@ -73,7 +73,7 @@ module rgst_tb;
     localparam width = 8;
 
     reg clk, reset;
-    reg load_enable, load;
+    reg load_enable;
     reg [width - 1 : 0] data_in;
     reg left_shift_enable, left_shift_value;
     reg right_shift_enable, right_shift_value;
@@ -85,7 +85,6 @@ module rgst_tb;
         .clk(clk),
         .reset(reset),
         .load_enable(load_enable),
-        .load(load),
         .data_in(data_in),
         .left_shift_enable(left_shift_enable),
         .left_shift_value(left_shift_value),
@@ -111,7 +110,6 @@ module rgst_tb;
     initial begin
         // Initialize all inputs
         load_enable        = 0;
-        load               = 0;
         data_in            = 8'b0;
         left_shift_enable  = 0;
         left_shift_value   = 0;
@@ -127,12 +125,10 @@ module rgst_tb;
         // Enable load signals
         data_in = 8'b10110010;
         load_enable = 1;
-        load = 1;
         #CLK_PERIOD;
 
         // Disable load signals
         load_enable = 0;
-        load = 0;
         #CLK_PERIOD;
 
         // --- Test 2: Left Shift ---
