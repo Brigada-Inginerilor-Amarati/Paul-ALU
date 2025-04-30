@@ -57,7 +57,7 @@ module alu_tb;
     initial begin
         clk = 1'b0;
 
-        #1000 $stop;  // timeout
+        // #1000 $stop;  // timeout
     end
     always #5 clk = ~clk;
 
